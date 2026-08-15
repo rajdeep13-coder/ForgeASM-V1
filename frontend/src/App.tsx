@@ -1,16 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import {
-  assembleCode,
-  createSimulation,
-  stepSimulation,
-  runSimulation,
-  resetSimulation,
-  deleteSimulation,
-  getExamples,
-  APIError,
-  type ExamplesByISA,
-  type SimState,
+  assembleCode, createSimulation, stepSimulation,
+  runSimulation, resetSimulation, deleteSimulation,
+  getExamples, APIError,
+  type ExamplesByISA, type SimState,
 } from './api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -28,412 +22,568 @@ const ARCHITECTURES = [
 ];
 
 const DEFAULT_CODE = `; ForgeASM — Assembly Editor
-; Select an ISA and load an example, or write your own code.
+; Select an ISA above and load an example, or write your own code.
 `;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AppStatus = 'idle' | 'assembling' | 'initializing' | 'ready' | 'stepping' | 'running' | 'halted' | 'resetting' | 'error';
+
+interface TraceEntry {
+  cycle: number;
+  pc: number;
+  instruction: string;
+  regChanges: Array<{ name: string; from: number; to: number }>;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const h = (v: number, pad = 4) => v.toString(16).padStart(pad, '0').toUpperCase();
+
+function diffRegisters(prev: Record<string, number>, next: Record<string, number>): Array<{ name: string; from: number; to: number }> {
+  return Object.entries(next)
+    .filter(([k, v]) => prev[k] !== undefined && prev[k] !== v)
+    .map(([k, v]) => ({ name: k, from: prev[k], to: v }));
+}
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-const IconCpu = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="4" y="4" width="16" height="16" rx="2"/>
-    <rect x="9" y="9" width="6" height="6"/>
+const IcCpu = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
     <line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/>
     <line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/>
     <line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/>
     <line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="15" x2="4" y2="15"/>
   </svg>
 );
+const IcPlay    = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>;
+const IcStep    = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="13,17 18,12 13,7"/><line x1="6" y1="12" x2="18" y2="12"/></svg>;
+const IcReset   = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>;
+const IcBuild   = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>;
+const IcTrash   = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 
-const IconPlay = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="5,3 19,12 5,21"/>
-  </svg>
-);
+// ─── Status helpers ───────────────────────────────────────────────────────────
 
-const IconStep = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="13,17 18,12 13,7"/>
-    <line x1="6" y1="12" x2="18" y2="12"/>
-  </svg>
-);
-
-const IconReset = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="1,4 1,10 7,10"/>
-    <path d="M3.51 15a9 9 0 1 0 .49-4"/>
-  </svg>
-);
-
-const IconBuild = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="16,3 21,8 8,21"/>
-    <line x1="12" y1="20" x2="21" y2="9"/>
-    <line x1="3" y1="11" x2="8" y2="11"/>
-    <line x1="5" y1="9" x2="5" y2="13"/>
-  </svg>
-);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type AppStatus =
-  | 'idle'
-  | 'assembling'
-  | 'initializing'
-  | 'ready'
-  | 'stepping'
-  | 'running'
-  | 'halted'
-  | 'resetting'
-  | 'error';
-
-interface ConsoleLine {
-  text: string;
-  type: 'info' | 'success' | 'error' | 'system';
+function statusLabel(s: AppStatus) {
+  return { idle:'Idle', assembling:'Assembling…', initializing:'Initializing…', ready:'Ready',
+           stepping:'Stepping…', running:'Running…', halted:'Halted', resetting:'Resetting…', error:'Error' }[s];
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const hexFmt = (val: number, pad = 4) =>
-  val.toString(16).padStart(pad, '0').toUpperCase();
-
-function statusLabel(s: AppStatus): string {
-  const map: Record<AppStatus, string> = {
-    idle: 'Idle',
-    assembling: 'Assembling…',
-    initializing: 'Initializing…',
-    ready: 'Ready',
-    stepping: 'Stepping…',
-    running: 'Running…',
-    halted: 'Halted',
-    resetting: 'Resetting…',
-    error: 'Error',
-  };
-  return map[s];
-}
-
-function statusClass(s: AppStatus): string {
-  if (s === 'idle' || s === 'assembling' || s === 'initializing') return 'idle';
-  if (s === 'ready') return 'assembled';
-  if (s === 'stepping' || s === 'running' || s === 'resetting') return 'running';
+function statusCls(s: AppStatus) {
   if (s === 'halted') return 'halted';
   if (s === 'error') return 'error';
+  if (s === 'ready') return 'ready';
+  if (s === 'running' || s === 'stepping' || s === 'resetting') return 'running';
   return 'idle';
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** CPU state summary card shown at top of right panel */
+function CpuStatusCard({ isa, arch, state, appStatus }: {
+  isa: string; arch: string; state: SimState | null; appStatus: AppStatus;
+}) {
+  const sc = statusCls(appStatus);
+  return (
+    <div className="cpu-card">
+      <div className="cpu-card-header">
+        <IcCpu />
+        <span>CPU STATE</span>
+        <div className={`cpu-status-dot ${sc}`} />
+        <span className={`cpu-status-text ${sc}`}>{statusLabel(appStatus).toUpperCase()}</span>
+      </div>
+      <div className="cpu-card-meta">
+        <span className="cpu-meta-item"><span className="cpu-meta-label">ISA</span><span className="cpu-meta-val">{isa.toUpperCase()}</span></span>
+        <span className="cpu-card-sep"/>
+        <span className="cpu-meta-item"><span className="cpu-meta-label">MEM</span><span className="cpu-meta-val">{arch === 'harvard' ? 'Harvard' : 'Von Neumann'}</span></span>
+      </div>
+      {state && (
+        <div className="cpu-card-kpis">
+          <div className="kpi">
+            <span className="kpi-label">PC</span>
+            <span className="kpi-val mono">0x{h(state.pc)}</span>
+            <span className="kpi-sub">{state.pc}</span>
+          </div>
+          <div className="kpi">
+            <span className="kpi-label">Cycles</span>
+            <span className="kpi-val mono">{state.cycle_count}</span>
+          </div>
+          <div className="kpi">
+            <span className="kpi-label">Next</span>
+            <span className="kpi-val mono instr">{state.current_instruction ?? (state.halted ? 'HALTED' : '—')}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Dynamic flags panel — reads whatever flags the backend returns */
+function FlagsPanel({ flags }: { flags: Record<string, boolean> }) {
+  const entries = Object.entries(flags);
+  if (entries.length === 0) {
+    return <div className="flags-empty">No flags exposed by this ISA</div>;
+  }
+  return (
+    <div className="flags-grid">
+      {entries.map(([name, val]) => (
+        <div key={name} className={`flag-chip ${val ? 'active' : ''}`}>
+          <span className="flag-name">{name}</span>
+          <span className="flag-val">{val ? '1' : '0'}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Dynamic registers panel — renders whatever the backend returns */
+function RegistersPanel({ registers, prev }: { registers: Record<string, number>; prev: Record<string, number> }) {
+  const entries = Object.entries(registers);
+  if (entries.length === 0) return <div className="reg-empty">No registers</div>;
+  return (
+    <div className="reg-list">
+      {entries.map(([name, val]) => {
+        const changed = prev[name] !== undefined && prev[name] !== val;
+        return (
+          <div key={name} className={`reg-row ${changed ? 'changed' : ''}`}>
+            <span className="reg-name">{name}</span>
+            <div className="reg-vals">
+              <span className="reg-hex">0x{h(val)}</span>
+              <span className="reg-dec">{val}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Execution trace */
+function TracePanel({ trace, onClear }: { trace: TraceEntry[]; onClear: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [trace]);
+
+  if (trace.length === 0) {
+    return (
+      <div className="trace-empty">
+        Step through the program to build an execution trace.
+      </div>
+    );
+  }
+  return (
+    <div className="trace-wrap">
+      <div className="trace-toolbar">
+        <span className="trace-count">{trace.length} entries</span>
+        <button className="trace-clear-btn" onClick={onClear} title="Clear trace">
+          <IcTrash /> Clear
+        </button>
+      </div>
+      <div className="trace-list" ref={ref}>
+        {trace.map((e, i) => (
+          <div key={i} className="trace-entry">
+            <div className="trace-header">
+              <span className="trace-cycle">#{e.cycle}</span>
+              <span className="trace-pc">PC: 0x{h(e.pc)}</span>
+              <span className="trace-instr">{e.instruction}</span>
+            </div>
+            {e.regChanges.length > 0 && (
+              <div className="trace-changes">
+                {e.regChanges.map(c => (
+                  <span key={c.name} className="trace-change">
+                    {c.name}: 0x{h(c.from)} → 0x{h(c.to)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Memory hex viewer */
+function MemoryPanel({ memory, pc, memAddrStr, onAddrChange }: {
+  memory: number[] | null; pc: number; memAddrStr: string; onAddrChange: (s: string) => void;
+}) {
+  const offset = parseInt(memAddrStr, 16) || 0;
+  // Button to jump to PC
+  const jumpToPC = () => {
+    const aligned = Math.max(0, Math.floor(pc / 8) * 8);
+    onAddrChange(aligned.toString(16).padStart(4, '0').toUpperCase());
+  };
+
+  return (
+    <div className="mem-panel">
+      <div className="mem-toolbar">
+        <span className="mem-label">0x</span>
+        <input
+          className="mem-addr-input"
+          value={memAddrStr}
+          onChange={e => onAddrChange(e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0,4).toUpperCase())}
+          maxLength={4}
+          placeholder="0000"
+        />
+        <button className="mem-jump-btn" onClick={jumpToPC} title="Jump to PC" disabled={!memory}>
+          → PC
+        </button>
+      </div>
+      <div className="mem-header-row">
+        <span className="mem-addr-col">ADDR</span>
+        <span className="mem-bytes-col">+0 +1 +2 +3 +4 +5 +6 +7</span>
+        <span className="mem-ascii-col">ASCII</span>
+      </div>
+      <div className="mem-rows">
+        {memory ? (
+          Array.from({ length: 16 }, (_, row) => {
+            const base = offset + row * 8;
+            if (base >= memory.length) return null;
+            let ascii = '';
+            const bytes: string[] = [];
+            for (let i = 0; i < 8; i++) {
+              const addr = base + i;
+              if (addr < memory.length) {
+                const v = memory[addr];
+                bytes.push(h(v, 2));
+                ascii += v >= 32 && v <= 126 ? String.fromCharCode(v) : '·';
+              } else {
+                bytes.push('--');
+                ascii += ' ';
+              }
+            }
+            const isPC = pc >= base && pc < base + 8;
+            return (
+              <div key={base} className={`mem-row ${isPC ? 'pc-row' : ''}`}>
+                <span className="mem-addr-col">{h(base, 4)}</span>
+                <div className="mem-bytes-col">
+                  {bytes.map((b, i) => {
+                    const addr = base + i;
+                    return <span key={i} className={`mem-byte ${addr === pc ? 'pc-byte' : ''}`}>{b}</span>;
+                  })}
+                </div>
+                <span className="mem-ascii-col">{ascii}</span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="mem-empty">No memory — assemble and initialize first.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Machine code view with current-PC highlight */
+function BinaryPanel({ binary, pc, isaName }: { binary: string | null; pc: number; isaName: string }) {
+  const pcRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    pcRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [pc]);
+
+  if (!binary) return (
+    <div className="bin-empty">No binary — assemble first.</div>
+  );
+
+  // Each line is one encoded instruction word (CISC may have 2-3 lines per logical instr)
+  const lines = binary.trim().split('\n');
+
+  return (
+    <div className="bin-list">
+      <div className="bin-header">
+        <span className="bin-idx-col">IDX</span>
+        <span className="bin-bits-col">BITS</span>
+      </div>
+      {lines.map((bits, i) => {
+        const isPC = i === pc;
+        return (
+          <div key={i} ref={isPC ? pcRef : undefined} className={`bin-row ${isPC ? 'active' : ''}`}>
+            <span className="bin-idx-col">{i.toString().padStart(3, '0')}</span>
+            <span className="bin-bits-col">{bits}</span>
+            {isPC && <span className="bin-arrow">◀ PC</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Program output panel */
+function OutputPanel({ output }: { output: string }) {
+  return (
+    <div className="out-panel">
+      {output ? (
+        <pre className="out-text">{output}</pre>
+      ) : (
+        <span className="out-empty">No output yet. Run a program that uses OUT instructions.</span>
+      )}
+    </div>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  // Editor state
-  const [code, setCode]               = useState(DEFAULT_CODE);
-  const [isa, setIsa]                 = useState('risc1');
-  const [architecture, setArch]       = useState('neumann');
-  const [allExamples, setAllExamples] = useState<ExamplesByISA>({});
-  const [selectedExample, setExample] = useState('');
+  // Config
+  const [code, setCode]         = useState(DEFAULT_CODE);
+  const [isa, setIsa]           = useState('risc1');
+  const [arch, setArch]         = useState('neumann');
+  const [allExamples, setExamples] = useState<ExamplesByISA>({});
+  const [selExample, setSelExample] = useState('');
 
-  // Workflow state
-  const [appStatus, setAppStatus] = useState<AppStatus>('idle');
-  const [binary, setBinary]       = useState<string | null>(null);
-  const [simId, setSimId]         = useState<string | null>(null);
-  const [simState, setSimState]   = useState<SimState | null>(null);
-  const [prevRegs, setPrevRegs]   = useState<Record<string, number>>({});
+  // Simulation
+  const [appStatus, setStatus]  = useState<AppStatus>('idle');
+  const [binary, setBinary]     = useState<string | null>(null);
+  const [simId, setSimId]       = useState<string | null>(null);
+  const [simState, setSimState] = useState<SimState | null>(null);
+  const [prevRegs, setPrevRegs] = useState<Record<string, number>>({});
 
-  // UI state
-  const [rightTab, setRightTab]     = useState<'registers' | 'memory'>('registers');
-  const [bottomTab, setBottomTab]   = useState<'console' | 'binary'>('console');
-  const [memAddrStr, setMemAddrStr] = useState('0000');
-  const [console_, setConsole]      = useState<ConsoleLine[]>([
-    { text: 'System ready. Load an example or write assembly code.', type: 'info' },
-  ]);
+  // Debugger extras
+  const [trace, setTrace]       = useState<TraceEntry[]>([]);
+  const [lastRun, setLastRun]   = useState<{ cycles: number; reason: string } | null>(null);
+  const [assembleErr, setAsmErr]= useState<string | null>(null);
 
-  const consoleRef  = useRef<HTMLDivElement>(null);
+  // Panel tabs
+  const [rightTab, setRightTab] = useState<'state' | 'memory' | 'trace' | 'output'>('state');
+  const [bottomTab, setBotTab]  = useState<'console' | 'binary'>('console');
+  const [memAddrStr, setMemAddr]= useState('0000');
+
+  // Editor refs
   const editorRef   = useRef<HTMLTextAreaElement>(null);
   const lineNumRef  = useRef<HTMLDivElement>(null);
-  // Keep a ref to the current simId for the cleanup effect
   const simIdRef    = useRef<string | null>(null);
+  const consoleRef  = useRef<HTMLDivElement>(null);
 
-  // Keep simIdRef in sync
+  // Console log
+  const [consoleLines, setConLines] = useState<Array<{ t: string; cls: string }>>([
+    { t: 'System ready. Load an example or write assembly code.', cls: 'info' },
+  ]);
+
+  const log = useCallback((t: string, cls = 'info') => {
+    setConLines(p => [...p, { t, cls }]);
+  }, []);
+
   useEffect(() => { simIdRef.current = simId; }, [simId]);
-
-  const currentExamples = allExamples[isa] || [];
-
-  // ── Load examples on mount ─────────────────────────────────────────────────
   useEffect(() => {
-    getExamples()
-      .then(setAllExamples)
-      .catch(() => addLine('Could not load examples from server.', 'error'));
+    if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+  }, [consoleLines]);
 
-    // Clean up simulation when the component unmounts / tab closes
+  const syncScroll = useCallback(() => {
+    if (editorRef.current && lineNumRef.current)
+      lineNumRef.current.scrollTop = editorRef.current.scrollTop;
+  }, []);
+
+  // Load examples
+  useEffect(() => {
+    getExamples().then(setExamples).catch(() => log('Could not load examples.', 'error'));
     return () => {
-      if (simIdRef.current) {
-        deleteSimulation(simIdRef.current).catch(() => {/* best-effort */});
-      }
+      if (simIdRef.current) deleteSimulation(simIdRef.current).catch(() => {});
     };
   }, []);
 
-  // ── Auto-scroll console ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (consoleRef.current) {
-      consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
-    }
-  }, [console_]);
+  const currentExamples = allExamples[isa] || [];
 
-  // ── Sync line numbers ──────────────────────────────────────────────────────
-  const syncScroll = useCallback(() => {
-    if (editorRef.current && lineNumRef.current) {
-      lineNumRef.current.scrollTop = editorRef.current.scrollTop;
-    }
-  }, []);
+  // ── apply state helper ────────────────────────────────────────────────────
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  function addLine(text: string, type: ConsoleLine['type'] = 'info') {
-    setConsole(prev => [...prev, { text, type }]);
-  }
-
-  function applyState(newState: SimState) {
+  function applyState(ns: SimState) {
     setSimState(prev => {
       if (prev) setPrevRegs(prev.registers);
-      return newState;
+      return ns;
     });
-    if (newState.halted) setAppStatus('halted');
+    if (ns.halted) setStatus('halted');
   }
 
   // ── Assemble & Load ───────────────────────────────────────────────────────
 
   const handleAssemble = async () => {
     if (appStatus === 'assembling' || appStatus === 'initializing') return;
+    if (simId) { deleteSimulation(simId).catch(() => {}); setSimId(null); simIdRef.current = null; }
 
-    // Delete any previous session
-    if (simId) {
-      deleteSimulation(simId).catch(() => {/* best-effort */});
-      setSimId(null);
-      simIdRef.current = null;
-    }
+    setStatus('assembling');
+    setBinary(null); setSimState(null); setPrevRegs({}); setTrace([]); setLastRun(null); setAsmErr(null);
+    log(`Assembling [${isa.toUpperCase()}]…`, 'system');
 
-    setAppStatus('assembling');
-    setBinary(null);
-    setSimState(null);
-    setPrevRegs({});
-    addLine(`Assembling [ISA: ${isa.toUpperCase()}]…`, 'system');
-
-    let assembledBinary: string;
+    let bin: string;
     try {
       const res = await assembleCode(code, isa);
       if (!res.success) {
-        addLine(`Assembly error: ${res.error}`, 'error');
-        setAppStatus('error');
+        setAsmErr(res.error ?? 'Assembly failed');
+        log(`Assembly error: ${res.error}`, 'error');
+        setStatus('error');
         return;
       }
-      assembledBinary = res.binary;
-      const lineCount = assembledBinary.trim().split('\n').length;
-      addLine(`Assembly OK — ${lineCount} instruction(s) encoded.`, 'success');
-      setBinary(assembledBinary);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      addLine(`Network error during assembly: ${msg}`, 'error');
-      setAppStatus('error');
+      bin = res.binary;
+      setBinary(bin);
+      log(`Assembly OK — ${bin.trim().split('\n').length} words encoded.`, 'success');
+    } catch (e) {
+      const m = e instanceof Error ? e.message : String(e);
+      setAsmErr(m);
+      log(`Network error: ${m}`, 'error');
+      setStatus('error');
       return;
     }
 
-    // ── Initialize simulation ────────────────────────────────────────────────
-    setAppStatus('initializing');
-    addLine(`Initializing simulator [Memory: ${architecture}]…`, 'system');
-
+    setStatus('initializing');
+    log(`Initializing [Memory: ${arch}]…`, 'system');
     try {
-      const session = await createSimulation(isa, architecture, assembledBinary);
-      setSimId(session.simulation_id);
-      simIdRef.current = session.simulation_id;
-      applyState(session.state);
-      setAppStatus('ready');
-      addLine(`Simulation ready (id: ${session.simulation_id.slice(0, 8)}…)`, 'success');
-    } catch (err) {
-      const msg = err instanceof APIError ? err.message : String(err);
-      addLine(`Simulation init failed: ${msg}`, 'error');
-      setAppStatus('error');
+      const sess = await createSimulation(isa, arch, bin);
+      setSimId(sess.simulation_id); simIdRef.current = sess.simulation_id;
+      applyState(sess.state);
+      setStatus('ready');
+      log(`Ready (id: ${sess.simulation_id.slice(0, 8)}…)`, 'success');
+      setRightTab('state');
+    } catch (e) {
+      const m = e instanceof APIError ? e.message : String(e);
+      log(`Init failed: ${m}`, 'error');
+      setStatus('error');
     }
   };
 
-  // ── Step ──────────────────────────────────────────────────────────────────
+  // ── Step ─────────────────────────────────────────────────────────────────
 
   const handleStep = async () => {
     if (!simId || appStatus === 'stepping' || appStatus === 'running') return;
-    setAppStatus('stepping');
+    setStatus('stepping');
     try {
+      const prevState = simState;
       const res = await stepSimulation(simId);
-      applyState(res.state);
-      if (res.last_instruction) {
-        addLine(`→ ${res.last_instruction}  (PC: 0x${hexFmt(res.state.pc)})`, 'info');
+      // Build trace entry using the instruction that was just executed
+      if (res.last_instruction && prevState) {
+        const changes = diffRegisters(prevState.registers, res.state.registers);
+        setTrace(t => [...t, {
+          cycle: res.state.cycle_count,
+          pc: prevState.pc,
+          instruction: res.last_instruction!,
+          regChanges: changes,
+        }]);
       }
-      if (!res.state.halted) setAppStatus('ready');
-    } catch (err) {
-      const msg = err instanceof APIError ? err.message : String(err);
-      addLine(`Step error: ${msg}`, 'error');
-      setAppStatus('error');
+      applyState(res.state);
+      if (!res.state.halted) setStatus('ready');
+    } catch (e) {
+      const m = e instanceof APIError ? e.message : String(e);
+      log(`Step error: ${m}`, 'error');
+      setStatus('error');
     }
   };
 
-  // ── Run ───────────────────────────────────────────────────────────────────
+  // ── Run ──────────────────────────────────────────────────────────────────
 
   const handleRun = async () => {
     if (!simId || appStatus === 'running') return;
-    setAppStatus('running');
-    addLine('Running program…', 'system');
+    setStatus('running');
+    log('Running…', 'system');
     try {
       const res = await runSimulation(simId, 10000);
       applyState(res.state);
-      addLine(
-        `Run complete — ${res.cycles_executed} cycles, reason: ${res.halt_reason}`,
-        res.halt_reason === 'halted' ? 'success' : 'info',
-      );
-      if (res.state.output) addLine(res.state.output, 'success');
-    } catch (err) {
-      const msg = err instanceof APIError ? err.message : String(err);
-      addLine(`Run error: ${msg}`, 'error');
-      setAppStatus('error');
+      setLastRun({ cycles: res.cycles_executed, reason: res.halt_reason });
+      log(`Done — ${res.cycles_executed} cycles (${res.halt_reason}).`, res.halt_reason === 'halted' ? 'success' : 'info');
+      if (res.state.output) log(`Output: ${res.state.output}`, 'output');
+      setRightTab('state');
+    } catch (e) {
+      const m = e instanceof APIError ? e.message : String(e);
+      log(`Run error: ${m}`, 'error');
+      setStatus('error');
     }
   };
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
+  // ── Reset ────────────────────────────────────────────────────────────────
 
   const handleReset = async () => {
     if (!simId) return;
-    setAppStatus('resetting');
-    setPrevRegs({});
+    setStatus('resetting');
+    setPrevRegs({}); setTrace([]); setLastRun(null);
     try {
       const res = await resetSimulation(simId);
       applyState(res.state);
-      setAppStatus('ready');
-      addLine('Processor reset.', 'system');
-    } catch (err) {
-      const msg = err instanceof APIError ? err.message : String(err);
-      addLine(`Reset error: ${msg}`, 'error');
-      setAppStatus('error');
+      setStatus('ready');
+      log('Processor reset.', 'system');
+    } catch (e) {
+      const m = e instanceof APIError ? e.message : String(e);
+      log(`Reset error: ${m}`, 'error');
+      setStatus('error');
     }
   };
 
-  // ── ISA change ────────────────────────────────────────────────────────────
-
-  const handleIsaChange = (val: string) => {
-    setIsa(val);
-    setExample('');
-  };
-
-  const handleExampleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value;
-    setExample(name);
-    const ex = currentExamples.find(x => x.name === name);
-    if (ex) setCode(ex.code);
-  };
-
-  // ─── Derived ──────────────────────────────────────────────────────────────
+  // ── Derived ──────────────────────────────────────────────────────────────
 
   const lineCount   = code.split('\n').length;
   const lineNumbers = Array.from({ length: Math.max(1, lineCount) }, (_, i) => i + 1).join('\n');
-  const memOffset   = parseInt(memAddrStr, 16) || 0;
   const isHalted    = simState?.halted ?? false;
-  const busy        = appStatus === 'assembling' || appStatus === 'initializing' ||
-                      appStatus === 'stepping'   || appStatus === 'running' ||
-                      appStatus === 'resetting';
+  const busy        = ['assembling','initializing','stepping','running','resetting'].includes(appStatus);
   const canStep     = !!simId && !isHalted && !busy;
   const canRun      = !!simId && !isHalted && appStatus !== 'running';
   const canReset    = !!simId && !busy;
-  const binaryLines = binary ? binary.trim().split('\n') : [];
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="app">
 
-      {/* ── Topbar ── */}
+      {/* ─── Topbar ─── */}
       <header className="topbar">
         <div className="topbar-brand">
-          <IconCpu />
+          <IcCpu />
           <span className="topbar-brand-name">ForgeASM</span>
+          <span className="topbar-brand-sub">Hardware Simulator</span>
         </div>
-
         <div className="topbar-divider" />
 
-        <div className="topbar-select-group">
-          <label htmlFor="isa-select">ISA</label>
-          <select
-            id="isa-select"
-            className="topbar-select"
-            value={isa}
-            onChange={e => handleIsaChange(e.target.value)}
-          >
-            {ISAS.map(i => (
-              <option key={i.id} value={i.id}>{i.label}</option>
-            ))}
+        <div className="tsel-group">
+          <label htmlFor="isa-sel">ISA</label>
+          <select id="isa-sel" className="tsel" value={isa} onChange={e => { setIsa(e.target.value); setSelExample(''); }}>
+            {ISAS.map(i => <option key={i.id} value={i.id}>{i.label}</option>)}
           </select>
         </div>
 
-        <div className="topbar-select-group">
-          <label htmlFor="arch-select">Memory</label>
-          <select
-            id="arch-select"
-            className="topbar-select"
-            value={architecture}
-            onChange={e => setArch(e.target.value)}
-          >
-            {ARCHITECTURES.map(a => (
-              <option key={a.id} value={a.id}>{a.label}</option>
-            ))}
+        <div className="tsel-group">
+          <label htmlFor="arch-sel">Memory</label>
+          <select id="arch-sel" className="tsel" value={arch} onChange={e => setArch(e.target.value)}>
+            {ARCHITECTURES.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
           </select>
         </div>
 
         {currentExamples.length > 0 && (
-          <div className="topbar-select-group">
-            <label htmlFor="example-select">Example</label>
-            <select
-              id="example-select"
-              className="topbar-select"
-              value={selectedExample}
-              onChange={handleExampleChange}
-            >
+          <div className="tsel-group">
+            <label htmlFor="ex-sel">Example</label>
+            <select id="ex-sel" className="tsel" value={selExample}
+              onChange={e => { setSelExample(e.target.value); const ex = currentExamples.find(x => x.name === e.target.value); if (ex) setCode(ex.code); }}>
               <option value="">— Select —</option>
-              {currentExamples.map(ex => (
-                <option key={ex.name} value={ex.name}>{ex.name}</option>
-              ))}
+              {currentExamples.map(ex => <option key={ex.name} value={ex.name}>{ex.name}</option>)}
             </select>
           </div>
         )}
 
         <div className="topbar-spacer" />
 
-        <div className={`status-badge ${statusClass(appStatus)}`}>
-          <span className="dot" />
+        {/* Status pill */}
+        <div className={`status-pill ${statusCls(appStatus)}`}>
+          <span className="status-dot" />
           {statusLabel(appStatus)}
         </div>
 
-        {simState && (
-          <div className="ip-badge">
-            IP: 0x{hexFmt(simState.pc ?? 0)}
+        {/* Quick KPIs */}
+        {simState && <>
+          <div className="topbar-kpi">
+            <span className="topbar-kpi-label">PC</span>
+            <span className="topbar-kpi-val">0x{h(simState.pc)}</span>
           </div>
-        )}
-
-        {simState && (
-          <div className="ip-badge" style={{ color: 'var(--blue)', borderColor: 'rgba(91,155,255,0.2)', background: 'var(--blue-dim)' }}>
-            {simState.cycle_count} cycles
+          <div className="topbar-kpi">
+            <span className="topbar-kpi-label">Cycles</span>
+            <span className="topbar-kpi-val">{simState.cycle_count}</span>
           </div>
-        )}
+        </>}
       </header>
 
-      {/* ── Workspace ── */}
+      {/* ─── Main workspace ─── */}
       <div className="workspace">
 
-        {/* ── Editor ── */}
-        <div className="editor-panel">
-          <div className="editor-toolbar">
-            <div className="editor-tab active">
-              <span className="editor-tab-dot" />
-              main.asm
-            </div>
-            <div className="toolbar-spacer" />
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-              {lineCount} lines
-            </span>
+        {/* ─── Editor column ─── */}
+        <div className="editor-col">
+          <div className="editor-titlebar">
+            <span className="editor-filename">main.asm</span>
+            <span className="editor-linecount">{lineCount} lines</span>
           </div>
-
           <div className="editor-body">
             <div className="line-numbers" ref={lineNumRef}>{lineNumbers}</div>
             <textarea
@@ -450,186 +600,109 @@ export default function App() {
             />
           </div>
 
-          <div className="action-bar">
-            <button
-              className="btn btn-assemble"
-              onClick={handleAssemble}
-              disabled={busy}
-            >
-              <IconBuild />
-              {appStatus === 'assembling' ? 'Assembling…' : appStatus === 'initializing' ? 'Loading…' : 'Assemble & Load'}
-            </button>
-
-            <div className="action-bar-spacer" />
-
-            <button className="btn btn-run"  onClick={handleRun}   disabled={!canRun}  title="Run all instructions">
-              <IconPlay /> Run
-            </button>
-            <button className="btn btn-step" onClick={handleStep}  disabled={!canStep} title="Step one instruction">
-              <IconStep /> Step
-            </button>
-            <button className="btn btn-reset" onClick={handleReset} disabled={!canReset} title="Reset CPU">
-              <IconReset /> Reset
-            </button>
-          </div>
-        </div>
-
-        {/* ── Right panel ── */}
-        <div className="right-panel">
-          <div className="panel-tabs">
-            <button
-              className={`panel-tab ${rightTab === 'registers' ? 'active' : ''}`}
-              onClick={() => setRightTab('registers')}
-            >
-              Registers
-            </button>
-            <button
-              className={`panel-tab ${rightTab === 'memory' ? 'active' : ''}`}
-              onClick={() => setRightTab('memory')}
-            >
-              Memory
-            </button>
-          </div>
-
-          {/* Registers */}
-          {rightTab === 'registers' && (
-            <div className="panel-section">
-              <div className="flags-row">
-                {(['Z', 'C', 'O', 'N'] as const).map(f => {
-                  const active = simState?.flags?.[f] ?? false;
-                  return (
-                    <div key={f} className={`flag-chip ${active ? 'active' : ''}`}>
-                      <span className="flag-chip-label">{f}</span>
-                      <span className="flag-chip-value">{active ? '1' : '0'}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="panel-section-title">General Purpose & Special</div>
-              <div className="registers-scroll">
-                {simState ? (
-                  Object.entries(simState.registers).map(([name, val]) => {
-                    const changed = prevRegs[name] !== undefined && prevRegs[name] !== val;
-                    return (
-                      <div key={name} className={`register-row ${changed ? 'changed' : ''}`}>
-                        <span className="reg-name">{name}</span>
-                        <div className="reg-values">
-                          <span className="reg-hex">0x{hexFmt(val)}</span>
-                          <span className="reg-dec">{val}</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="registers-empty">
-                    Assemble code to initialize<br />the processor state.
-                  </div>
-                )}
-              </div>
+          {/* Assembly error banner */}
+          {assembleErr && (
+            <div className="asm-error-banner">
+              <strong>Assembly Error</strong>
+              <pre className="asm-error-text">{assembleErr}</pre>
             </div>
           )}
 
-          {/* Memory */}
+          {/* Action bar */}
+          <div className="action-bar">
+            <button className="btn btn-assemble" onClick={handleAssemble} disabled={busy}>
+              <IcBuild />
+              {appStatus === 'assembling' ? 'Assembling…' : appStatus === 'initializing' ? 'Loading…' : 'Assemble & Load'}
+            </button>
+            <div className="ab-sep" />
+            <button className="btn btn-run"   onClick={handleRun}   disabled={!canRun}  title="Run all"><IcPlay  /> Run</button>
+            <button className="btn btn-step"  onClick={handleStep}  disabled={!canStep} title="Step one"><IcStep  /> Step</button>
+            <button className="btn btn-reset" onClick={handleReset} disabled={!canReset} title="Reset"><IcReset /> Reset</button>
+          </div>
+        </div>
+
+        {/* ─── Right panel ─── */}
+        <div className="right-panel">
+
+          {/* Tab bar */}
+          <div className="rp-tabs">
+            {(['state','memory','trace','output'] as const).map(t => (
+              <button key={t} className={`rp-tab ${rightTab === t ? 'active' : ''}`} onClick={() => setRightTab(t)}>
+                {t === 'state' ? 'CPU' : t === 'trace' ? 'Trace' : t === 'output' ? 'Output' : 'Memory'}
+                {t === 'trace' && trace.length > 0 && <span className="rp-tab-badge">{trace.length}</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* ── CPU State tab ── */}
+          {rightTab === 'state' && (
+            <div className="rp-body">
+              <CpuStatusCard isa={isa} arch={arch} state={simState} appStatus={appStatus} />
+
+              {lastRun && (
+                <div className="run-summary">
+                  <span className="rs-label">Last run</span>
+                  <span className="rs-val">{lastRun.cycles} cycles</span>
+                  <span className={`rs-reason ${lastRun.reason}`}>{lastRun.reason}</span>
+                </div>
+              )}
+
+              <div className="rp-section-title">Flags</div>
+              {simState
+                ? <FlagsPanel flags={simState.flags} />
+                : <div className="rp-placeholder">Flags will appear after initialization.</div>}
+
+              <div className="rp-section-title">Registers</div>
+              {simState
+                ? <RegistersPanel registers={simState.registers} prev={prevRegs} />
+                : <div className="rp-placeholder">Registers will appear after initialization.</div>}
+            </div>
+          )}
+
+          {/* ── Memory tab ── */}
           {rightTab === 'memory' && (
-            <div className="panel-section">
-              <div className="memory-panel">
-                <div className="memory-addr-bar">
-                  <span>0x</span>
-                  <input
-                    className="memory-addr-input"
-                    type="text"
-                    value={memAddrStr}
-                    onChange={e =>
-                      setMemAddrStr(
-                        e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 4).toUpperCase()
-                      )
-                    }
-                    placeholder="0000"
-                    maxLength={4}
-                    aria-label="Memory address offset"
-                  />
-                  <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>base</span>
-                </div>
-                <div className="memory-scroll">
-                  {simState?.memory ? (
-                    Array.from({ length: 16 }).map((_, row) => {
-                      const base = memOffset + row * 8;
-                      if (base >= simState.memory.length) return null;
-                      let ascii = '';
-                      const bytes: string[] = [];
-                      for (let i = 0; i < 8; i++) {
-                        const addr = base + i;
-                        if (addr < simState.memory.length) {
-                          const v = simState.memory[addr];
-                          bytes.push(hexFmt(v, 2));
-                          ascii += v >= 32 && v <= 126 ? String.fromCharCode(v) : '·';
-                        } else {
-                          bytes.push('--');
-                          ascii += ' ';
-                        }
-                      }
-                      return (
-                        <div key={base} className="memory-row">
-                          <span className="mem-addr">{hexFmt(base, 4)}</span>
-                          <div className="mem-bytes">
-                            {bytes.map((b, i) => <span key={i} className="mem-byte">{b}</span>)}
-                          </div>
-                          <span className="mem-ascii">{ascii}</span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="placeholder">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="2" y="3" width="20" height="14" rx="2"/>
-                        <line x1="8" y1="21" x2="16" y2="21"/>
-                        <line x1="12" y1="17" x2="12" y2="21"/>
-                      </svg>
-                      Memory not initialized
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="rp-body">
+              <MemoryPanel
+                memory={simState?.memory ?? null}
+                pc={simState?.pc ?? 0}
+                memAddrStr={memAddrStr}
+                onAddrChange={setMemAddr}
+              />
+            </div>
+          )}
+
+          {/* ── Trace tab ── */}
+          {rightTab === 'trace' && (
+            <div className="rp-body">
+              <TracePanel trace={trace} onClear={() => setTrace([])} />
+            </div>
+          )}
+
+          {/* ── Output tab ── */}
+          {rightTab === 'output' && (
+            <div className="rp-body">
+              <OutputPanel output={simState?.output ?? ''} />
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Bottom output ── */}
-      <div className="output-area">
-        <div className="output-tabs">
-          <button
-            className={`output-tab ${bottomTab === 'console' ? 'active' : ''}`}
-            onClick={() => setBottomTab('console')}
-          >
-            Console
-          </button>
-          <button
-            className={`output-tab ${bottomTab === 'binary' ? 'active' : ''}`}
-            onClick={() => setBottomTab('binary')}
-          >
-            Binary
-          </button>
+      {/* ─── Bottom bar ─── */}
+      <div className="bottom-bar">
+        <div className="bot-tabs">
+          <button className={`bot-tab ${bottomTab === 'console' ? 'active' : ''}`} onClick={() => setBotTab('console')}>Console</button>
+          <button className={`bot-tab ${bottomTab === 'binary' ? 'active' : ''}`}  onClick={() => setBotTab('binary')}>Machine Code</button>
         </div>
-
-        <div className="output-content" ref={consoleRef}>
-          {bottomTab === 'console' && console_.map((line, i) => (
-            <span key={i} className={`output-line ${line.type}`}>{line.text}</span>
-          ))}
-
+        <div className="bot-content">
+          {bottomTab === 'console' && (
+            <div className="console-lines" ref={consoleRef}>
+              {consoleLines.map((l, i) => (
+                <span key={i} className={`cl ${l.cls}`}>{l.t}</span>
+              ))}
+            </div>
+          )}
           {bottomTab === 'binary' && (
-            binary ? (
-              <div className="binary-output">
-                {binaryLines.map((bits, i) => (
-                  <div key={i} className="binary-row">
-                    <span className="binary-index">{i.toString().padStart(3, '0')}</span>
-                    <span className="binary-bits">{bits}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span className="output-line info">No binary output yet. Assemble code first.</span>
-            )
+            <BinaryPanel binary={binary} pc={simState?.pc ?? 0} isaName={isa} />
           )}
         </div>
       </div>

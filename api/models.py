@@ -61,11 +61,15 @@ class SimulationState(BaseModel):
     """Complete snapshot of the CPU state at a given moment."""
     pc: int = Field(..., description="Current program counter (instruction index)")
     registers: Dict[str, int] = Field(..., description="All register values keyed by name")
-    flags: FlagsSnapshot = Field(..., description="Processor flags")
+    flags: Dict[str, bool] = Field(..., description="Processor flags keyed by flag name")
     memory: List[int] = Field(..., description="First 512 bytes of data memory as integer list")
     halted: bool = Field(..., description="True when the CPU has executed a HALT or exceeded cycles")
     output: str = Field(default="", description="Captured I/O output text")
     cycle_count: int = Field(default=0, description="Total instructions executed so far")
+    current_instruction: Optional[str] = Field(
+        default=None,
+        description="Name of the instruction at the current PC (what will execute on next step)",
+    )
 
 
 # ─── Response Models ──────────────────────────────────────────────────────────

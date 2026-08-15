@@ -28,7 +28,7 @@ from core.assembler.assembler import Assembler
 from core.memory.memory import VonNeumannMemory, HarvardMemory
 from core.io.io import MemoryMappedIO
 from core.simulator.cpu import CPU
-from api.models import FlagsSnapshot, SimulationState
+from api.models import SimulationState
 
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
@@ -77,12 +77,19 @@ def _snapshot_memory(cpu: CPU, size: int = 512) -> List[int]:
 def _build_state_snapshot(sim: "Simulation") -> SimulationState:
     """Convert the live CPU state into a serialisable SimulationState."""
     cpu = sim.cpu
-    flags = FlagsSnapshot(
-        Z=cpu.get_flag("Z"),
-        C=cpu.get_flag("C"),
-        O=cpu.get_flag("O"),
-        N=cpu.get_flag("N"),
-    )
+
+    # Build flags dynamically from the CPU's FR register so it works for all ISAs.
+    # We read the four flags ForgeASM defines; any that aren't present default to False.
+    flags: Dict[str, bool] = {
+        "Z": cpu.get_flag("Z"),
+        "C": cpu.get_flag("C"),
+        "O": cpu.get_flag("O"),
+        "N": cpu.get_flag("N"),
+    }
+
+    # Peek at the instruction currently sitting at PC (next to execute).
+    current_instruction = sim._peek_instruction_name()
+
     return SimulationState(
         pc=cpu.get_pc(),
         registers=dict(cpu.registers),
@@ -91,6 +98,7 @@ def _build_state_snapshot(sim: "Simulation") -> SimulationState:
         halted=cpu.halted,
         output=cpu.output_buffer,
         cycle_count=sim.cycle_count,
+        current_instruction=current_instruction,
     )
 
 

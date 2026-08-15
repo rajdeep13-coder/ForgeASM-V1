@@ -1,44 +1,28 @@
 /**
  * ForgeASM REST API client
  * ========================
- * All communication with the backend is HTTP/REST.  There are no WebSockets.
+ * Pure HTTP/REST — no WebSockets anywhere.
  *
- * The base URL is read from the Vite env variable VITE_API_URL at build time.
- * In development the Vite proxy rewrites /api → http://localhost:8000, so the
- * default empty string ("same origin") works out of the box.
+ * All simulation state originates from the Python ForgeASM core.
+ * The frontend is strictly a visualisation layer.
  */
 
 const BASE = (import.meta.env.VITE_API_URL as string) ?? '';
 
 // ─── Low-level fetch wrapper ──────────────────────────────────────────────────
 
-async function request<T>(
-  method: string,
-  path: string,
-  body?: unknown,
-): Promise<T> {
-  const init: RequestInit = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
-  }
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const init: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) init.body = JSON.stringify(body);
 
   const res = await fetch(`${BASE}${path}`, init);
-
-  // 204 No Content – return null
   if (res.status === 204) return null as T;
 
   const data = await res.json();
-
   if (!res.ok) {
-    // Structured error from the API
-    const msg: string =
-      data?.error ?? data?.detail ?? `HTTP ${res.status}`;
+    const msg: string = data?.error ?? data?.detail ?? `HTTP ${res.status}`;
     throw new APIError(msg, data?.code ?? 'HTTP_ERROR', res.status);
   }
-
   return data as T;
 }
 
@@ -47,7 +31,6 @@ async function request<T>(
 export class APIError extends Error {
   readonly code: string;
   readonly httpStatus: number;
-
   constructor(message: string, code: string, httpStatus: number) {
     super(message);
     this.name = 'APIError';
@@ -71,21 +54,23 @@ export interface ExampleProgram {
 
 export type ExamplesByISA = Record<string, ExampleProgram[]>;
 
-export interface FlagsSnapshot {
-  Z: boolean;
-  C: boolean;
-  O: boolean;
-  N: boolean;
-}
-
+/**
+ * Snapshot of the full CPU state returned by every simulation endpoint.
+ * All fields are optional-friendly since different ISAs expose different registers.
+ * The `flags` record is keyed by flag name (e.g. "Z", "C", "O", "N") and
+ * contains boolean values — rendered dynamically, not hardcoded.
+ */
 export interface SimState {
   pc: number;
   registers: Record<string, number>;
-  flags: FlagsSnapshot;
+  /** Dynamic: keyed by flag name, value is boolean. Do NOT assume Z/C/O/N. */
+  flags: Record<string, boolean>;
   memory: number[];
   halted: boolean;
   output: string;
   cycle_count: number;
+  /** Instruction name sitting at current PC — next to execute on step. */
+  current_instruction: string | null;
 }
 
 export interface SimulationSession {
@@ -98,6 +83,7 @@ export interface SimulationSession {
 export interface StepResult {
   simulation_id: string;
   state: SimState;
+  /** Instruction name that was just executed (before the step). */
   last_instruction: string | null;
 }
 
@@ -110,20 +96,9 @@ export interface RunResult {
 
 // ─── Assembler ────────────────────────────────────────────────────────────────
 
-export async function assembleCode(
-  code: string,
-  isa: string,
-): Promise<AssembleResult> {
+export async function assembleCode(code: string, isa: string): Promise<AssembleResult> {
   return request<AssembleResult>('POST', '/api/assemble', { code, isa });
 }
-
-// ─── ISA metadata ─────────────────────────────────────────────────────────────
-
-export async function getISAInfo(name: string): Promise<unknown> {
-  return request<unknown>('GET', `/api/isa/${name}`);
-}
-
-// ─── Example programs ─────────────────────────────────────────────────────────
 
 export async function getExamples(): Promise<ExamplesByISA> {
   return request<ExamplesByISA>('GET', '/api/examples');
@@ -131,66 +106,26 @@ export async function getExamples(): Promise<ExamplesByISA> {
 
 // ─── Simulation session ───────────────────────────────────────────────────────
 
-/**
- * Create a new simulation session and load the binary into memory.
- * Returns the session (including its unique simulation_id).
- */
 export async function createSimulation(
-  isa: string,
-  memoryArchitecture: string,
-  binary: string,
-  programStart = 0,
+  isa: string, memoryArchitecture: string, binary: string, programStart = 0,
 ): Promise<SimulationSession> {
   return request<SimulationSession>('POST', '/api/simulations', {
-    isa,
-    memory_architecture: memoryArchitecture,
-    binary,
-    program_start: programStart,
+    isa, memory_architecture: memoryArchitecture, binary, program_start: programStart,
   });
 }
 
-/**
- * Fetch the current state of an existing simulation without executing anything.
- */
-export async function getSimulation(
-  simulationId: string,
-): Promise<SimulationSession> {
-  return request<SimulationSession>('GET', `/api/simulations/${simulationId}`);
-}
-
-/**
- * Execute exactly one instruction and return the new state.
- */
 export async function stepSimulation(simulationId: string): Promise<StepResult> {
   return request<StepResult>('POST', `/api/simulations/${simulationId}/step`);
 }
 
-/**
- * Execute up to maxCycles instructions and return the final state.
- */
-export async function runSimulation(
-  simulationId: string,
-  maxCycles = 1000,
-): Promise<RunResult> {
-  return request<RunResult>('POST', `/api/simulations/${simulationId}/run`, {
-    max_cycles: maxCycles,
-  });
+export async function runSimulation(simulationId: string, maxCycles = 10000): Promise<RunResult> {
+  return request<RunResult>('POST', `/api/simulations/${simulationId}/run`, { max_cycles: maxCycles });
 }
 
-/**
- * Reset the CPU to its initial state (registers, flags, memory all cleared).
- * The original binary is reloaded automatically.
- */
-export async function resetSimulation(
-  simulationId: string,
-): Promise<{ simulation_id: string; state: SimState }> {
+export async function resetSimulation(simulationId: string): Promise<{ simulation_id: string; state: SimState }> {
   return request('POST', `/api/simulations/${simulationId}/reset`);
 }
 
-/**
- * Delete the simulation session from the server.
- * Call this when the user is done to free server-side memory.
- */
 export async function deleteSimulation(simulationId: string): Promise<void> {
   return request('DELETE', `/api/simulations/${simulationId}`);
 }
