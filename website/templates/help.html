@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<p style="{{ p_style }}">Registers for this architecture are:</p>
+<ul style="padding-left: 14%; text-align: left">
+    {% for item in reg_dict %}
+        <li><p style="color: #FFFFFF;">{{item.0}} - {{item.3}}</p></li>
+    {% endfor %}
+    </ul>
+<br>
+<br>
+<h2 style="color: #dd5; text-align: center">Instruction Set:</h2>
+<center>
+<table class="rwd-table" style="background-color: #453c64; width: 80%">
+<thead>
+    <tr>
+      <th style="text-align:left; vertical-align: text-top; width: 15%; color: #FFFFFF;">Instruction</th>
+      <th style="text-align:left; vertical-align: text-top; width: 25%; color: #FFFFFF;">Examples</th>
+      <th style="text-align:left; vertical-align: text-top; width: 60%; color: #FFFFFF;">Description</th>
+    </tr>
+</thead>
+<tbody>
+{% for item in items[1:] %}
+<TR>
+   <TD style="text-align:left; vertical-align: text-top; color: #FFFFFF;"><code>{{item.name}}</code></TD>
+   <TD style="text-align:left; vertical-align: text-top">
+       <ul style="padding: 0;">
+           {% for example in item.examples %}
+           <li><code style="color: #FFFFFF;">{{example}}</code></li>
+           {% endfor %}
+       </ul>
+   </TD>
+   <TD style="text-align:left; vertical-align: text-top; color: #FFFFFF;">{{item.description}}</TD>
+</TR>
+{% endfor %}
+</tbody>
+</table>
+    <br>
+    <h5 style="color: #dd5;">Assembly Simulator project 2020</h5>
+    <h5 style="color: #dd5;">GNU General Public License v3.0</h5>
+</center>
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,1056 @@
+{
+  "risc1": [
+    "Instruction Set for RISC-Stack ISA",
+    {
+      "name": "load",
+      "examples": [
+        "load",
+        "load $num"
+      ],
+      "description": "Loads a word from memory at location TOS (or num) and pushes it onto the register stack"
+    },
+    {
+      "name": "loadf",
+      "examples": [
+        "loadf"
+      ],
+      "description": "Loads a word from the flag register and pushes it onto the register stack"
+    },
+    {
+      "name": "store",
+      "examples": [
+        "store",
+        "store $num"
+      ],
+      "description": "Stores the word from TOS (or num) into memory to the location at TOS"
+    },
+    {
+      "name": "storef",
+      "examples": [
+        "storef"
+      ],
+      "description": "Stores the word from TOS into the flag register"
+    },
+    {
+      "name": "swap",
+      "examples": [
+        "swap"
+      ],
+      "description": "Swaps two top values from TOS (top of the register stack)"
+    },
+    {
+      "name": "dup",
+      "examples": [
+        "dup"
+      ],
+      "description": "Duplicates the top value from the register stack"
+    },
+    {
+      "name": "dup2",
+      "examples": [
+        "dup2"
+      ],
+      "description": "Duplicates the second from top value from the register stack"
+    },
+    {
+      "name": "mov",
+      "examples": [
+        "mov $num"
+      ],
+      "description": "Pushes the value of num to the register stack"
+    },
+    {
+      "name": "push",
+      "examples": [
+        "push"
+      ],
+      "description": "Pushes the word from TOS onto the memory stack"
+    },
+    {
+      "name": "pushf",
+      "examples": [
+        "pushf"
+      ],
+      "description": "Pushes the word from the flag register onto the memory stack"
+    },
+    {
+      "name": "pop",
+      "examples": [
+        "pop"
+      ],
+      "description": "Pops the word from the memory stack onto top of the register stack"
+    },
+    {
+      "name": "popf",
+      "examples": [
+        "popf"
+      ],
+      "description": "Pops the word from the memory stack to the flag register"
+    },
+    {
+      "name": "add",
+      "examples": [
+        "add"
+      ],
+      "description": "Adds two top values from TOS and pushes the result onto TOS"
+    },
+    {
+      "name": "sub",
+      "examples": [
+        "sub"
+      ],
+      "description": "Subtracts the second TOS from the top of the register stack, pushing the result onto it"
+    },
+    {
+      "name": "mul",
+      "examples": [
+        "mul"
+      ],
+      "description": "Multiplies two top values from TOS and pushes the result onto TOS"
+    },
+    {
+      "name": "div",
+      "examples": [
+        "div"
+      ],
+      "description": "Divides the TOS value by the second from TOS, pushing the result onto it"
+    },
+    {
+      "name": "and",
+      "examples": [
+        "and"
+      ],
+      "description": "Performs a binary and operation between two top TOS values, pushing the result onto it"
+    },
+    {
+      "name": "or",
+      "examples": [
+        "or"
+      ],
+      "description": "Performs a bitwise or operation between two top TOS values, pushing the result onto it"
+    },
+    {
+      "name": "xor",
+      "examples": [
+        "xor"
+      ],
+      "description": "Performs a bitwise xor operation between two top TOS values, pushing the result onto it"
+    },
+    {
+      "name": "not",
+      "examples": [
+        "not"
+      ],
+      "description": "Performs a bitwise not operation on TOS value, pushing the result onto the register stack"
+    },
+    {
+      "name": "lsh",
+      "examples": [
+        "lsh $num"
+      ],
+      "description": "Performs a bitwise left shift operation on TOS value, moving it num bits to the left, and pushing the value onto TOS"
+    },
+    {
+      "name": "rsh",
+      "examples": [
+        "rsh $num"
+      ],
+      "description": "Performs a bitwise right shift operation on TOS value, moving it num bits to the right, and pushing the value onto TOS"
+    },
+    {
+      "name": "call",
+      "examples": [
+        "call",
+        "call $off"
+      ],
+      "description": "Pushes the next instruction's location on to the memory stack, transfers control by TOS or off instructions"
+    },
+    {
+      "name": "ret",
+      "examples": [
+        "ret"
+      ],
+      "description": "Returns control to the instruction saved on the memory stack"
+    },
+    {
+      "name": "cmpe",
+      "examples": [
+        "cmpe",
+        "cmpe $num"
+      ],
+      "description": "Compares either two values on top of the register stack, or TOS and num for equality, pushing the result onto TOS (True is 0xffff, False is 0x0000)"
+    },
+    {
+      "name": "cmpb",
+      "examples": [
+        "cmpb",
+        "cmpb $num"
+      ],
+      "description": "Compares either two values on top of the register stack, or TOS and num, determining whether the first is bigger than second. Pushing the result of the check onto TOS (True is 0xffff, False is 0x0000)"
+    },
+    {
+      "name": "jmp",
+      "examples": [
+        "jmp",
+        "jmp $off"
+      ],
+      "description": "Unconditionally performs the jump by TOS (or off) instructions"
+    },
+    {
+      "name": "jc",
+      "examples": [
+        "jc",
+        "jc $off"
+      ],
+      "description": "Checks whether the TOS value is True, and if it is, performs the jump by TOS (or off) instructions"
+    },
+    {
+      "name": "in",
+      "examples": [
+        "in $port"
+      ],
+      "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified, pushes it onto TOS"
+    },
+    {
+      "name": "out",
+      "examples": [
+        "out $port"
+      ],
+      "description": "Transfers data from TOS to the device at port"
+    },
+    {
+      "name": "nop",
+      "examples": [
+        "nop"
+      ],
+      "description": "Does not do anything"
+    }
+  ],
+  "risc2": [
+    "Instruction Set for RISC-Accumulator ISA",
+    {
+      "name": "load",
+      "examples": [
+        "load"
+      ],
+      "description": "Loads a word from memory at location IR into register ACC"
+    },
+    {
+      "name": "loadf",
+      "examples": [
+        "loadf"
+      ],
+      "description": "Loads a word from the Flag Register into register ACC"
+    },
+    {
+      "name": "loadi",
+      "examples": [
+        "loadi"
+      ],
+      "description": "Loads a word from the Index Register into register ACC"
+    },
+    {
+      "name": "store",
+      "examples": [
+        "store",
+        "store $num"
+      ],
+      "description": "Stores a word from the ACC register or num to memory location at IR"
+    },
+    {
+      "name": "storef",
+      "examples": [
+        "storef"
+      ],
+      "description": "Stores a word from the ACC register into the Flag Register"
+    },
+    {
+      "name": "storei",
+      "examples": [
+        "storei"
+      ],
+      "description": "Stores a word from the ACC register into the Index Register"
+    },
+    {
+      "name": "mov",
+      "examples": [
+        "mov $num"
+      ],
+      "description": "Copies num into the ACC register"
+    },
+    {
+      "name": "push",
+      "examples": [
+        "push"
+      ],
+      "description": "Pushes a word from the ACC register onto the memory stack"
+    },
+    {
+      "name": "pushf",
+      "examples": [
+        "pushf"
+      ],
+      "description": "Pushes a word from the Flag Register onto the memory stack"
+    },
+    {
+      "name": "pushi",
+      "examples": [
+        "pushi"
+      ],
+      "description": "Pushes a word from the Index Register onto the memory stack"
+    },
+    {
+      "name": "pop",
+      "examples": [
+        "pop"
+      ],
+      "description": "Pops a word from the memory stack into the ACC register"
+    },
+    {
+      "name": "popf",
+      "examples": [
+        "popf"
+      ],
+      "description": "Pops a word from the memory stack into the Flag Register"
+    },
+    {
+      "name": "popi",
+      "examples": [
+        "popi"
+      ],
+      "description": "Pops a word from the memory stack into the Index Register"
+    },
+    {
+      "name": "add",
+      "examples": [
+        "add"
+      ],
+      "description": "Adds the values of the ACC register and memory at IR location, saving the result into ACC"
+    },
+    {
+      "name": "inc",
+      "examples": [
+        "inc"
+      ],
+      "description": "Increments the value in the ACC register by 1"
+    },
+    {
+      "name": "dec",
+      "examples": [
+        "dec"
+      ],
+      "description": "Decrements the value in the ACC register by 1"
+    },
+    {
+      "name": "sub",
+      "examples": [
+        "sub"
+      ],
+      "description": "Subtracts the value in memory at IR location from the value in ACC register, saving the result into ACC"
+    },
+    {
+      "name": "mul",
+      "examples": [
+        "mul"
+      ],
+      "description": "Multiplies the values of the ACC register and memory at IR location, saving the result into ACC"
+    },
+    {
+      "name": "div",
+      "examples": [
+        "div"
+      ],
+      "description": "Divides the value at the ACC register by the value in memory at IR location, saving the result into ACC"
+    },
+    {
+      "name": "and",
+      "examples": [
+        "and"
+      ],
+      "description": "Computes a bitwise and operation between ACC and memory location at IR and saves the result into ACC"
+    },
+    {
+      "name": "or",
+      "examples": [
+        "or"
+      ],
+      "description": "Computes a bitwise or operation between ACC and memory location at IR and saves the result into ACC"
+    },
+    {
+      "name": "xor",
+      "examples": [
+        "xor"
+      ],
+      "description": "Computes a bitwise xor operation between ACC and memory location at IR and saves the result into ACC"
+    },
+    {
+      "name": "not",
+      "examples": [
+        "not"
+      ],
+      "description": "Computes a bitwise not operation on the value of ACC"
+    },
+    {
+      "name": "lsh",
+      "examples": [
+        "lsh $num"
+      ],
+      "description": "Shifts the ACC value to the left by $num bits"
+    },
+    {
+      "name": "rsh",
+      "examples": [
+        "rsh $num"
+      ],
+      "description": "Shifts the ACC value to the right by $num bits"
+    },
+    {
+      "name": "call",
+      "examples": [
+        "call $off",
+        "call"
+      ],
+      "description": "Pushes the next instruction's location on to the memory stack, transfers control by off (or ACC) instructions"
+    },
+    {
+      "name": "ret",
+      "examples": [
+        "ret"
+      ],
+      "description": "Returns control to the instruction saved on the memory stack"
+    },
+    {
+      "name": "cmp",
+      "examples": [
+        "cmp",
+        "cmp $num"
+      ],
+      "description": "Subtracts the value in memory at IR location (or num) from ACC, changing the flags accordingly"
+    },
+    {
+      "name": "test",
+      "examples": [
+        "test",
+        "test $num"
+      ],
+      "description": "Performs bitwise and operation between ACC and value in memory at IR location (or num), changing the flags accordingly"
+    },
+    {
+      "name": "jmp",
+      "examples": [
+        "jmp",
+        "jmp $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions unconditionally"
+    },
+    {
+      "name": "je",
+      "examples": [
+        "je",
+        "je $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was equal to the second"
+    },
+    {
+      "name": "jne",
+      "examples": [
+        "jne",
+        "jne $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was not equal to the second"
+    },
+    {
+      "name": "jg",
+      "examples": [
+        "jg",
+        "jg $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was greater than the second"
+    },
+    {
+      "name": "jge",
+      "examples": [
+        "jge",
+        "jge $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was greater or equal than the second"
+    },
+    {
+      "name": "jl",
+      "examples": [
+        "jl",
+        "jl $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was less than the second"
+    },
+    {
+      "name": "jle",
+      "examples": [
+        "jle",
+        "jle $off"
+      ],
+      "description": "Jumps by off (or ACC) instructions if the first number in the compare instruction was less or equal than the second"
+    },
+    {
+      "name": "in",
+      "examples": [
+        "in $port"
+      ],
+      "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified, saving the result into ACC"
+    },
+    {
+      "name": "out",
+      "examples": [
+        "out $port"
+      ],
+      "description": "Transfers data from ACC to the device at port"
+    },
+    {
+      "name": "nop",
+      "examples": [
+        "nop"
+      ],
+      "description": "Does not do anything"
+    }
+  ],
+  "risc3": [
+    "Instruction Set for RISC-Register ISA",
+    {
+      "name": "load",
+      "examples": [
+        "load %reg1, [%reg2]"
+      ],
+      "description": "Loads a word from memory at location mem into register reg"
+    },
+    {
+      "name": "store",
+      "examples": [
+        "store [%reg1], %reg2"
+      ],
+      "description": "Copies a word from the register reg and stores it in memory at location mem"
+    },
+    {
+      "name": "mov_low",
+      "examples": [
+        "mov_low %reg, $num"
+      ],
+      "description": "Copies the value of num into the lower (less significant) byte of reg"
+    },
+    {
+      "name": "mov_high",
+      "examples": [
+        "mov_high %reg, $num"
+      ],
+      "description": "Copies the value of num into the higher (more significant) byte of reg"
+    },
+    {
+      "name": "mov",
+      "examples": [
+        "mov %reg1, %reg2"
+      ],
+      "description": "Copies the value of reg2 into reg1"
+    },
+    {
+      "name": "push",
+      "examples": [
+        "push %reg"
+      ],
+      "description": "Pushes the value of reg on the top of the memory stack"
+    },
+    {
+      "name": "pop",
+      "examples": [
+        "pop %reg"
+      ],
+      "description": "Pops the value from the memory stack into reg"
+    },
+    {
+      "name": "add",
+      "examples": [
+        "add %reg1, %reg2, %reg3"
+      ],
+      "description": "Adds the value of reg3 to the register reg2, saving the result in the register reg1"
+    },
+    {
+      "name": "addc",
+      "examples": [
+        "addc %reg1, %reg2"
+      ],
+      "description": "Adds the value of the carry flag to the register reg2, saving the result in the register reg1"
+    },
+    {
+      "name": "sub",
+      "examples": [
+        "sub %reg1, %reg2, %reg3"
+      ],
+      "description": "Subtracts the value of reg3 from the register reg2, saving the result in the register reg1"
+    },
+    {
+      "name": "mul",
+      "examples": [
+        "mul %reg1, %reg2, %reg3"
+      ],
+      "description": "Multiplies the value from reg2 times reg3, saving the result in the register reg1"
+    },
+    {
+      "name": "div",
+      "examples": [
+        "div %reg1, %reg2, %reg3"
+      ],
+      "description": "Divides the value from reg2 by reg3, saving the result in the register reg1"
+    },
+    {
+      "name": "and",
+      "examples": [
+        "and %reg1, %reg2, %reg3"
+      ],
+      "description": "Computes a bitwise and operation between reg2 and reg3 and saves the result into reg1"
+    },
+    {
+      "name": "or",
+      "examples": [
+        "or %reg1, %reg2, %reg3"
+      ],
+      "description": "Computes a bitwise or operation between reg2 and reg3 and saves the result into reg1"
+    },
+    {
+      "name": "xor",
+      "examples": [
+        "xor %reg1, %reg2, %reg3"
+      ],
+      "description": "Computes a bitwise xor operation between reg2 and reg3 and saves the result into reg1"
+    },
+    {
+      "name": "not",
+      "examples": [
+        "not %reg1, %reg2"
+      ],
+      "description": "Computes a bitwise not operation on reg2 and saves the result into reg1"
+    },
+    {
+      "name": "lsh",
+      "examples": [
+        "lsh %reg1, %reg2, %reg3"
+      ],
+      "description": "Shifts the value from register reg2 by reg3 bits to the left, saving the result in the register reg1"
+    },
+    {
+      "name": "rsh",
+      "examples": [
+        "rsh %reg1, %reg2, %reg3"
+      ],
+      "description": "Shifts the value from register reg2 by reg3 bits to the right, saving the result in the register reg1"
+    },
+    {
+      "name": "call",
+      "examples": [
+        "call $off",
+        "call %reg"
+      ],
+      "description": "Saves the next instruction's location to the Link Register, transfers control by off or reg instructions"
+    },
+    {
+      "name": "ret",
+      "examples": [
+        "ret"
+      ],
+      "description": "Transfers control back to the instruction saved in the Link Register"
+    },
+    {
+      "name": "cmp",
+      "examples": [
+        "cmp %reg1, %reg2",
+        "cmp %reg, $num"
+      ],
+      "description": "Subtracts the second value from the first one, changing the flags accordingly"
+    },
+    {
+      "name": "test",
+      "examples": [
+        "test %reg1, %reg2"
+      ],
+      "description": "Performs bitwise and operation between the reg1 and reg2, changing the flags accordingly"
+    },
+    {
+      "name": "jmp",
+      "examples": [
+        "jmp %reg",
+        "jmp $off"
+      ],
+      "description": "Jumps by off (or reg) instructions unconditionally"
+    },
+    {
+      "name": "je",
+      "examples": [
+        "je $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was equal to the second"
+    },
+    {
+      "name": "jne",
+      "examples": [
+        "jne $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was not equal to the second"
+    },
+    {
+      "name": "jg",
+      "examples": [
+        "jg $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater than the second"
+    },
+    {
+      "name": "jge",
+      "examples": [
+        "jge $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater or equal than the second"
+    },
+    {
+      "name": "jl",
+      "examples": [
+        "jl $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less than the second"
+    },
+    {
+      "name": "jle",
+      "examples": [
+        "jle $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less or equal than the second"
+    },
+    {
+      "name": "in",
+      "examples": [
+        "in %reg, $port"
+      ],
+      "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified, saving the result into reg"
+    },
+    {
+      "name": "out",
+      "examples": [
+        "out $port, %reg",
+        "out $port, $num"
+      ],
+      "description": "Transfers data from num (or reg) to the device at port"
+    },
+    {
+      "name": "nop",
+      "examples": [
+        "nop"
+      ],
+      "description": "Does not do anything"
+    }
+  ],
+  "cisc": [
+    "Instruction Set for CISC-Register ISA",
+    {
+      "name": "mov",
+      "examples": [
+        "mov %reg, $num",
+        "mov %reg, %reg",
+        "mov %reg, [%reg]",
+        "mov %reg, [%reg+$off]",
+        "mov [%reg], $num",
+        "mov [%reg], %reg",
+        "mov [%reg+$off], $num",
+        "mov [%reg+$off], %reg"
+      ],
+      "description": "Copies a word from the right operand into the left (either into the register, or into memory at location pointed by the register, with offset specified by $off)"
+    },
+    {
+      "name": "push",
+      "examples": [
+        "push $num",
+        "push %reg"
+      ],
+      "description": "Pushes the value of reg or num on the top of the memory stack"
+    },
+    {
+      "name": "pop",
+      "examples": [
+        "pop %reg"
+      ],
+      "description": "Pops the value from the memory stack into reg"
+    },
+    {
+      "name": "enter",
+      "examples": [
+        "enter $num"
+      ],
+      "description": "Replaces three instructions on moving the stack further own on new procedure call: push %bp / mov %bp, %sp / sub %sp, $num"
+    },
+    {
+      "name": "leave",
+      "examples": [
+        "leave"
+      ],
+      "description": "Replaces two instructions on return to the previous procedure's stack frame: mov %sp, %bp / pop %bp"
+    },
+    {
+      "name": "add",
+      "examples": [
+        "add %reg1, %reg2",
+        "add %reg1, [%reg2]",
+        "add %reg1, [%reg2+$off]",
+        "add [%reg1], %reg2"
+      ],
+      "description": "Adds the value of the second operand to the first operand, saving the result in the first one"
+    },
+    {
+      "name": "sub",
+      "examples": [
+        "sub %reg1, %reg2",
+        "sub %reg1, [%reg2]",
+        "sub %reg1, [%reg2+$off]",
+        "sub [%reg1], %reg2"
+      ],
+      "description": "Subtracts the value of the second operand from the first operand, saving the result in the first one"
+    },
+    {
+      "name": "inc",
+      "examples": [
+        "inc %reg",
+        "inc [%reg]",
+        "inc [%reg+$off]"
+      ],
+      "description": "Increments the value of the operand by one"
+    },
+     {
+      "name": "dec",
+      "examples": [
+        "dec %reg",
+        "dec [%reg]",
+        "dec [%reg+$off]"
+      ],
+      "description": "Decrements the value of the operand by one"
+    },
+    {
+      "name": "mul",
+      "examples": [
+        "mul %reg, $num",
+        "mul %reg1, %reg2",
+        "mul %reg1, [%reg2]",
+        "mul %reg1, [%reg2+$off]",
+        "mul [%reg1], %reg2"
+      ],
+      "description": "Multiplies two operands, saving the result in the first one"
+    },
+    {
+      "name": "div",
+      "examples": [
+        "div %reg, $num",
+        "div %reg1, %reg2",
+        "div %reg1, [%reg2]",
+        "div %reg1, [%reg2+$off]",
+        "div [%reg1], %reg2"
+      ],
+      "description": "Divides the first operand by the second operand, saving the result in the first one"
+    },
+    {
+      "name": "and",
+      "examples": [
+        "and %reg1, %reg2",
+        "and %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise and operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "or",
+      "examples": [
+        "or %reg1, %reg2",
+        "or %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise or operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "xor",
+      "examples": [
+        "xor %reg1, %reg2",
+        "xor %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise xor operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "not",
+      "examples": [
+        "not %reg",
+        "not [%reg]"
+      ],
+      "description": "Computes a bitwise not operation on the value of the operand"
+    },
+    {
+      "name": "lsh",
+      "examples": [
+        "lsh %reg, $num",
+        "lsh [%reg], $num",
+        "lsh [%reg+$off], $num"
+      ],
+      "description": "Shifts the value from the first operand by off bits to the left, saving the result in the first operand"
+    },
+    {
+      "name": "rsh",
+      "examples": [
+        "rsh %reg, $num",
+        "rsh [%reg], $num",
+        "rsh [%reg+$off], $num"
+      ],
+      "description": "Shifts the value from the first operand by off bits to the right, saving the result in the first operand"
+    },
+    {
+      "name": "call",
+      "examples": [
+        "call $off",
+        "call %reg",
+        "call %reg+$off"
+      ],
+      "description": "Saves the next instruction's location to the stack, transfers control by off, reg, or reg+off instructions"
+    },
+    {
+      "name": "ret",
+      "examples": [
+        "ret"
+      ],
+      "description": "Transfers control back to the instruction saved in the stack"
+    },
+    {
+      "name": "cmp",
+      "examples": [
+        "cmp %reg, $num",
+        "cmp %reg1, %reg2",
+        "cmp %reg1, [%reg2]",
+        "cmp %reg1, [%reg2+$off]"
+      ],
+      "description": "Subtracts the second value from the first one, changing the flags accordingly"
+    },
+    {
+      "name": "test",
+      "examples": [
+        "test %reg1, %reg2",
+        "test %reg1, [%reg2]",
+        "test %reg1, [%reg2+$off]"
+      ],
+      "description": "Performs bitwise and operation between the first operand and the second operand, changing the flags accordingly"
+    },
+    {
+      "name": "jmp",
+      "examples": [
+        "jmp $off",
+        "jmp %reg",
+        "jmp %reg+$off"
+      ],
+      "description": "Jumps by off, reg or reg+off instructions unconditionally"
+    },
+    {
+      "name": "je",
+      "examples": [
+        "je $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was equal to the second"
+    },
+    {
+      "name": "jne",
+      "examples": [
+        "jne $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was not equal to the second"
+    },
+    {
+      "name": "jg",
+      "examples": [
+        "jg $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater than the second"
+    },
+    {
+      "name": "jge",
+      "examples": [
+        "jge $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater or equal than the second"
+    },
+    {
+      "name": "jl",
+      "examples": [
+        "jl $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less than the second"
+    },
+    {
+      "name": "jle",
+      "examples": [
+        "jle $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less or equal than the second"
+    },
+    {
+      "name": "in",
+      "examples": [
+        "in %reg, $port",
+        "in [%reg], $port",
+        "in [%reg+$off], $port"
+      ],
+      "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified, saving the result into reg"
+    },
+    {
+      "name": "out",
+      "examples": [
+        "out $port, %reg",
+        "out $port, [%reg]",
+        "out $port, [%reg+$off]"
+      ],
+      "description": "Transfers data from the second operand to the device at port"
+    },
+    {
+      "name": "load4",
+      "examples": [
+        "load4 [%reg]"
+      ],
+      "description": "SIMD operation: Loads four words starting from reg into four main registers: R00, R01, R02, R03"
+    },
+    {
+      "name": "store4",
+      "examples": [
+        "store4 [%reg]"
+      ],
+      "description": "SIMD operation: Stores main registers: R00, R01, R02, R03 into memory at location reg"
+    },
+    {
+      "name": "add4",
+      "examples": [
+        "add4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Adds the value of reg to four values starting at reg location in memory"
+    },
+    {
+      "name": "sub4",
+      "examples": [
+        "sub4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Subtracts the value of reg from four values starting at reg location in memory"
+    },
+    {
+      "name": "mul4",
+      "examples": [
+        "mul4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Multiplies four values starting at reg location in memory by the value of reg"
+    },
+    {
+      "name": "div4",
+      "examples": [
+        "div4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Divides four values starting at reg location in memory by the value of reg"
+    },
+    {
+      "name": "nop",
+      "examples": [
+        "nop"
+      ],
+      "description": "Does not do anything"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Help page</title>
+    <link rel="stylesheet" type="text/css" href="https://codepen.io/geoffyuen/pen/FCBEg.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='microcontroller.png') }}">
+</head>
+<body style="background-color: #29233d; font-size: 11.5pt">
+<br>
+<h1 style="color: #dd5; text-align: center">{{ items[0] }}</h1>
+<br>
+<h2 style="color: #cccc16; text-align: center">Notes</h2>
+<p style="{{ p_style }}">Every assembly instruction looks like this:
+    <code>operation operand1, operand2, operand2</code></p>
+<br>
+<p style="{{ p_style }}">Operands are of a few types:</p>
+    <ul style="padding-left: 14%; text-align: left">
+        <li><p style="color: #FFFFFF;">Constant numbers (have to start with $)</p></li>
+        <li><p style="color: #FFFFFF;">Register identifiers (have to start with %)</p></li>
+        <li><p style="color: #FFFFFF;">Memory addresses (have to be embedded within [ ])</p></li>
+    </ul>
+<br>
+<p style="{{ p_style }}">Assembly instructions are written in INTEL-style, with the result going from right to left.
+    Thus, in <code>add %reg1, %reg2, %reg3</code> instruction, the result goes into <code>reg1</code>, and
+    calculations are done between <code>reg2</code> and <code>reg3</code></p>
+<br>
+<p style="{{ p_style }}">A few label types are supported. Jump labels appear on their own lines and point to the next line, and can
+consist only of alphanumeric characters:</p>
+<p style="{{ p_style }}"><code>.labelexample</code></p>
+<p style="{{ p_style }}">They are used for jumps and calls, the instruction right next after the label will be jumped to:</p>
+<p style="{{ p_style }}"><code>jmp .labelexample</code></p>
+<br>
+<p style="{{ p_style }}">Assembly directives can be used too, db and dw are supported (they encode byte by byte and word by word respectively):</p>
+<p style="{{ p_style }}"><code>.number db 15</code></p>
+<p style="{{ p_style }}"><code>.word db "examplestring"</code></p>
+<p style="{{ p_style }}">You can also encode byte values in strings:</p>
+<p style="{{ p_style }}"><code>.word db "word\0x035"</code></p>
+<p style="{{ p_style }}"><code>.word db "word\035"</code></p>
+<p style="{{ p_style }}">They can be used as immediate constants anywhere in the assembly program. The first example below puts ASCII code for 'e' into R00, and the second - just a decimal number 15:</p>
+<p style="{{ p_style }}"><code>mov_low %R00, .word</code></p>
+<p style="{{ p_style }}"><code>mov_low %R00, .number</code></p>
+<p style="{{ p_style }}">Offsets can also be specified, the program below puts ASCII code for 'x' into R00, and so on:</p>
+<p style="{{ p_style }}"><code>mov_low %R00, .word+$1</code></p>
+<br>
+<p style="{{ p_style }}">Simulator supports two INPUT/OUTPUT architectures:</p>
+    <ul style="padding-left: 14%; text-align: left">
+        <li><p style="color: #FFFFFF;">Specials commands I/O (uses <code>in</code>, <code>out</code> commands)</p></li>
+        <li><p style="color: #FFFFFF;">Memory-Mapped I/O (uses memory at starting point 1004 and ending point 1024)</p></li>
+    </ul>
+<br>
+{% block content %}
+{% endblock %}
