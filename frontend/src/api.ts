@@ -13,9 +13,9 @@ export interface ISAInfo {
 export interface ExampleProgram {
   name: string;
   code: string;
-  isa: string;
-  description: string;
 }
+
+export type ExamplesByISA = Record<string, ExampleProgram[]>;
 
 export interface SimState {
   registers: Record<string, number>;
@@ -45,7 +45,7 @@ export async function getISAInfo(name: string): Promise<ISAInfo> {
   return res.json();
 }
 
-export async function getExamples(): Promise<ExampleProgram[]> {
+export async function getExamples(): Promise<ExamplesByISA> {
   const res = await fetch('/api/examples');
   return res.json();
 }

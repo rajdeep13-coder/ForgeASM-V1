@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import {
   assembleCode,
   SimulatorSocket,
   getExamples,
-  ExampleProgram,
-  SimState,
-  SimUpdate
+  type ExamplesByISA,
+  type SimState,
+  type SimUpdate
 } from './api';
 
 const ISAS = [
@@ -26,7 +26,7 @@ export default function App() {
   const [isa, setIsa] = useState('risc1');
   const [architecture, setArchitecture] = useState('neumann');
   
-  const [allExamples, setAllExamples] = useState<Record<string, {name: string, code: string}[]>>({});
+  const [allExamples, setAllExamples] = useState<ExamplesByISA>({});
   const [selectedExample, setSelectedExample] = useState('');
   
   const [isAssembling, setIsAssembling] = useState(false);
@@ -45,7 +45,7 @@ export default function App() {
 
   useEffect(() => {
     getExamples().then(data => {
-      setAllExamples(data as any);
+      setAllExamples(data);
     }).catch(err => console.error('Failed to load examples:', err));
     
     socketRef.current = new SimulatorSocket((update: SimUpdate) => {
@@ -75,7 +75,7 @@ export default function App() {
   const handleExampleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
     setSelectedExample(name);
-    const ex = currentExamples.find((x: any) => x.name === name);
+    const ex = currentExamples.find(x => x.name === name);
     if (ex) {
       setCode(ex.code);
     }
@@ -158,7 +158,7 @@ export default function App() {
               <label>Example</label>
               <select value={selectedExample} onChange={handleExampleChange}>
                 <option value="">-- Custom --</option>
-                {currentExamples.map((ex: any) => (
+                {currentExamples.map(ex => (
                   <option key={ex.name} value={ex.name}>{ex.name}</option>
                 ))}
               </select>
