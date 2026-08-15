@@ -38,21 +38,45 @@ def _load_binary_into_memory(cpu: CPU, binary_str: str, program_start: int = 0) 
     Parse the assembled binary (newline-separated bit strings) and write it
     byte-by-byte into CPU memory starting at *program_start*.
 
-    Each line is a binary bit string produced by the Assembler.  Lines are
-    concatenated, padded to a byte boundary, then written sequentially.
+    For CISC, each logical instruction may produce multiple lines (opcode,
+    register byte, optional immediate bytes) that are already byte-aligned.
+    For RISC1/RISC2/RISC3, all bit strings are concatenated into one
+    continuous bitstream and then sliced into bytes — this preserves the
+    packed encoding that the CPU's bit-addressed fetch assumes.
     """
+    isa_name = cpu.isa.name.lower()
     lines = [ln.strip() for ln in binary_str.strip().split("\n") if ln.strip()]
-    address = program_start
 
-    for line in lines:
-        bit_len = len(line)
-        # Pad to the next full byte
-        padded = line.ljust(((bit_len + 7) // 8) * 8, "0")
-        for i in range(0, len(padded), 8):
-            byte_val = int(padded[i : i + 8], 2)
+    if isa_name == "cisc":
+        # CISC assembler emits one line per physical byte-group; each line is
+        # already a multiple of 8 bits, so write line-by-line.
+        address = program_start
+        for line in lines:
+            padded = line.ljust(((len(line) + 7) // 8) * 8, "0")
+            for i in range(0, len(padded), 8):
+                byte_val = int(padded[i : i + 8], 2)
+                try:
+                    if hasattr(cpu.memory, "instr_mem"):
+                        cpu.memory.instr_mem.write_byte(address, byte_val)
+                    else:
+                        cpu.memory.write_data(address, byte_val, 1)
+                except Exception:
+                    break
+                address += 1
+    else:
+        # RISC1/2/3: concatenate ALL bit lines into one stream, then write
+        # bytes. This ensures that PC * isa_bit_size correctly indexes any
+        # instruction in the packed stream.
+        bit_stream = "".join(lines)
+        # Pad to a full byte
+        if len(bit_stream) % 8 != 0:
+            bit_stream += "0" * (8 - len(bit_stream) % 8)
+
+        address = program_start
+        for i in range(0, len(bit_stream), 8):
+            byte_val = int(bit_stream[i : i + 8], 2)
             try:
                 if hasattr(cpu.memory, "instr_mem"):
-                    # Harvard – write to instruction memory
                     cpu.memory.instr_mem.write_byte(address, byte_val)
                 else:
                     cpu.memory.write_data(address, byte_val, 1)

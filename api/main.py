@@ -19,9 +19,10 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.models import AssembleRequest, AssembleResponse
 from api.routes.simulation import router as simulation_router
@@ -180,3 +181,41 @@ async def get_examples() -> JSONResponse:
         examples[isa_name] = isa_examples
 
     return JSONResponse(content=examples)
+
+
+# ─── Frontend static files (same-origin SPA) ──────────────────────────────────
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+_FRONTEND_DIST = os.path.join(_REPO_ROOT, "frontend", "dist")
+_FRONTEND_ASSETS = os.path.join(_FRONTEND_DIST, "assets")
+
+# Mount /assets so Vite's hashed JS/CSS bundles are served correctly
+if os.path.isdir(_FRONTEND_ASSETS):
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS), name="assets")
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_spa(full_path: str) -> FileResponse:
+    """
+    SPA catch-all: serve index.html for every route that is not an /api path.
+    This enables React Router (or direct URL loads) to work correctly.
+
+    Must be registered AFTER all /api routes.
+    """
+    # Never intercept API, docs, or openapi routes
+    blocked = ("api/", "docs", "redoc", "openapi.json")
+    if any(full_path.startswith(b) for b in blocked):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    index_path = os.path.join(_FRONTEND_DIST, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+
+    # Frontend hasn't been built yet — return a helpful JSON message
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "Frontend not built. Run: cd frontend && npm run build",
+            "hint": "The API is available at /api/*",
+        },
+    )
