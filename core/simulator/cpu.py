@@ -515,8 +515,14 @@ class CPU:
         self.decode_and_execute()
 
     def run(self, max_cycles: int = 10000):
+        from core.memory.exceptions import MemoryError as MemErr
         cycles = 0
         while not self.halted and cycles < max_cycles:
-            self.step()
+            try:
+                self.step()
+            except MemErr:
+                # Out-of-bounds or illegal memory access — halt cleanly
+                self.halted = True
+                break
             cycles += 1
 

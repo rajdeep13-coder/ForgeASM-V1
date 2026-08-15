@@ -2,11 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import {
   assembleCode,
-  SimulatorSocket,
+  createSimulation,
+  stepSimulation,
+  runSimulation,
+  resetSimulation,
+  deleteSimulation,
   getExamples,
+  APIError,
   type ExamplesByISA,
   type SimState,
-  type SimUpdate
 } from './api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -15,12 +19,12 @@ const ISAS = [
   { id: 'risc1', label: 'RISC-1 (Stack)' },
   { id: 'risc2', label: 'RISC-2 (Accumulator)' },
   { id: 'risc3', label: 'RISC-3 (Register)' },
-  { id: 'cisc',  label: 'CISC' }
+  { id: 'cisc',  label: 'CISC' },
 ];
 
 const ARCHITECTURES = [
   { id: 'neumann', label: 'Von Neumann' },
-  { id: 'harvard', label: 'Harvard' }
+  { id: 'harvard', label: 'Harvard' },
 ];
 
 const DEFAULT_CODE = `; ForgeASM — Assembly Editor
@@ -69,115 +73,250 @@ const IconBuild = () => (
   </svg>
 );
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AppStatus =
+  | 'idle'
+  | 'assembling'
+  | 'initializing'
+  | 'ready'
+  | 'stepping'
+  | 'running'
+  | 'halted'
+  | 'resetting'
+  | 'error';
+
+interface ConsoleLine {
+  text: string;
+  type: 'info' | 'success' | 'error' | 'system';
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const hex = (val: number, pad = 4) => val.toString(16).padStart(pad, '0').toUpperCase();
+const hexFmt = (val: number, pad = 4) =>
+  val.toString(16).padStart(pad, '0').toUpperCase();
 
-function getStatusClass(status: string): string {
-  if (status === 'Idle' || status === 'Assembling...') return 'idle';
-  if (status === 'Assembled' || status === 'Initialized') return 'assembled';
-  if (status === 'Running' || status === 'Stepped') return 'running';
-  if (status === 'Halted' || status === 'Completed') return 'halted';
-  if (status.toLowerCase().includes('error')) return 'error';
+function statusLabel(s: AppStatus): string {
+  const map: Record<AppStatus, string> = {
+    idle: 'Idle',
+    assembling: 'Assembling…',
+    initializing: 'Initializing…',
+    ready: 'Ready',
+    stepping: 'Stepping…',
+    running: 'Running…',
+    halted: 'Halted',
+    resetting: 'Resetting…',
+    error: 'Error',
+  };
+  return map[s];
+}
+
+function statusClass(s: AppStatus): string {
+  if (s === 'idle' || s === 'assembling' || s === 'initializing') return 'idle';
+  if (s === 'ready') return 'assembled';
+  if (s === 'stepping' || s === 'running' || s === 'resetting') return 'running';
+  if (s === 'halted') return 'halted';
+  if (s === 'error') return 'error';
   return 'idle';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function App() {
+  // Editor state
   const [code, setCode]               = useState(DEFAULT_CODE);
   const [isa, setIsa]                 = useState('risc1');
   const [architecture, setArch]       = useState('neumann');
   const [allExamples, setAllExamples] = useState<ExamplesByISA>({});
   const [selectedExample, setExample] = useState('');
 
-  const [isAssembling, setAssembling] = useState(false);
-  const [assembleError, setError]     = useState<string | null>(null);
-  const [binary, setBinary]           = useState<string | null>(null);
+  // Workflow state
+  const [appStatus, setAppStatus] = useState<AppStatus>('idle');
+  const [binary, setBinary]       = useState<string | null>(null);
+  const [simId, setSimId]         = useState<string | null>(null);
+  const [simState, setSimState]   = useState<SimState | null>(null);
+  const [prevRegs, setPrevRegs]   = useState<Record<string, number>>({});
 
-  const [simState, setSimState]             = useState<SimState | null>(null);
-  const [prevRegs, setPrevRegs]             = useState<Record<string, number>>({});
-  const [status, setStatus]                 = useState('Idle');
-
-  const [memAddrStr, setMemAddrStr]   = useState('0000');
-  const [rightTab, setRightTab]       = useState<'registers' | 'memory'>('registers');
-  const [bottomTab, setBottomTab]     = useState<'console' | 'binary'>('console');
-  const [consoleLines, setConsoleLines] = useState<{ text: string; type: string }[]>([
-    { text: 'System ready. Load an example or write assembly code.', type: 'info' }
+  // UI state
+  const [rightTab, setRightTab]     = useState<'registers' | 'memory'>('registers');
+  const [bottomTab, setBottomTab]   = useState<'console' | 'binary'>('console');
+  const [memAddrStr, setMemAddrStr] = useState('0000');
+  const [console_, setConsole]      = useState<ConsoleLine[]>([
+    { text: 'System ready. Load an example or write assembly code.', type: 'info' },
   ]);
 
-  const socketRef  = useRef<SimulatorSocket | null>(null);
-  const consoleRef = useRef<HTMLDivElement>(null);
-  const editorRef  = useRef<HTMLTextAreaElement>(null);
-  const lineNumRef = useRef<HTMLDivElement>(null);
+  const consoleRef  = useRef<HTMLDivElement>(null);
+  const editorRef   = useRef<HTMLTextAreaElement>(null);
+  const lineNumRef  = useRef<HTMLDivElement>(null);
+  // Keep a ref to the current simId for the cleanup effect
+  const simIdRef    = useRef<string | null>(null);
+
+  // Keep simIdRef in sync
+  useEffect(() => { simIdRef.current = simId; }, [simId]);
 
   const currentExamples = allExamples[isa] || [];
 
-  // Auto-scroll console
+  // ── Load examples on mount ─────────────────────────────────────────────────
+  useEffect(() => {
+    getExamples()
+      .then(setAllExamples)
+      .catch(() => addLine('Could not load examples from server.', 'error'));
+
+    // Clean up simulation when the component unmounts / tab closes
+    return () => {
+      if (simIdRef.current) {
+        deleteSimulation(simIdRef.current).catch(() => {/* best-effort */});
+      }
+    };
+  }, []);
+
+  // ── Auto-scroll console ────────────────────────────────────────────────────
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
-  }, [consoleLines]);
+  }, [console_]);
 
-  // Sync line numbers scroll with editor
+  // ── Sync line numbers ──────────────────────────────────────────────────────
   const syncScroll = useCallback(() => {
     if (editorRef.current && lineNumRef.current) {
       lineNumRef.current.scrollTop = editorRef.current.scrollTop;
     }
   }, []);
 
-  // Load examples & connect WebSocket
-  useEffect(() => {
-    getExamples()
-      .then(setAllExamples)
-      .catch(err => console.error('Failed to load examples:', err));
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-    socketRef.current = new SimulatorSocket((update: SimUpdate) => {
-      const s = update.status;
-      setStatus(
-        s === 'initialized' ? 'Initialized' :
-        s === 'stepped'     ? 'Stepped'     :
-        s === 'completed'   ? 'Halted'      :
-        s === 'running'     ? 'Running'     :
-        s === 'reset'       ? 'Initialized' :
-        s === 'error'       ? 'Error'       :
-        s
-      );
-
-      if (update.error) {
-        setError(update.error);
-        addLine(`Simulator error: ${update.error}`, 'error');
-      }
-      if (update.state) {
-        setSimState(prev => {
-          if (prev) setPrevRegs(prev.registers);
-          return update.state!;
-        });
-        if (s === 'completed' || (update.state.halted)) {
-          addLine('--- Execution halted ---', 'system');
-          if (update.state.output) addLine(update.state.output, 'success');
-        }
-        if (s === 'initialized') {
-          addLine(`Simulator initialized [ISA: ${isa.toUpperCase()}, Arch: ${architecture}]`, 'system');
-        }
-      }
-    });
-
-    socketRef.current.connect().catch(err => {
-      addLine('WebSocket connection failed. Check backend is running.', 'error');
-      console.error(err);
-    });
-
-    return () => socketRef.current?.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function addLine(text: string, type = 'info') {
-    setConsoleLines(prev => [...prev, { text, type }]);
+  function addLine(text: string, type: ConsoleLine['type'] = 'info') {
+    setConsole(prev => [...prev, { text, type }]);
   }
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
+  function applyState(newState: SimState) {
+    setSimState(prev => {
+      if (prev) setPrevRegs(prev.registers);
+      return newState;
+    });
+    if (newState.halted) setAppStatus('halted');
+  }
+
+  // ── Assemble & Load ───────────────────────────────────────────────────────
+
+  const handleAssemble = async () => {
+    if (appStatus === 'assembling' || appStatus === 'initializing') return;
+
+    // Delete any previous session
+    if (simId) {
+      deleteSimulation(simId).catch(() => {/* best-effort */});
+      setSimId(null);
+      simIdRef.current = null;
+    }
+
+    setAppStatus('assembling');
+    setBinary(null);
+    setSimState(null);
+    setPrevRegs({});
+    addLine(`Assembling [ISA: ${isa.toUpperCase()}]…`, 'system');
+
+    let assembledBinary: string;
+    try {
+      const res = await assembleCode(code, isa);
+      if (!res.success) {
+        addLine(`Assembly error: ${res.error}`, 'error');
+        setAppStatus('error');
+        return;
+      }
+      assembledBinary = res.binary;
+      const lineCount = assembledBinary.trim().split('\n').length;
+      addLine(`Assembly OK — ${lineCount} instruction(s) encoded.`, 'success');
+      setBinary(assembledBinary);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addLine(`Network error during assembly: ${msg}`, 'error');
+      setAppStatus('error');
+      return;
+    }
+
+    // ── Initialize simulation ────────────────────────────────────────────────
+    setAppStatus('initializing');
+    addLine(`Initializing simulator [Memory: ${architecture}]…`, 'system');
+
+    try {
+      const session = await createSimulation(isa, architecture, assembledBinary);
+      setSimId(session.simulation_id);
+      simIdRef.current = session.simulation_id;
+      applyState(session.state);
+      setAppStatus('ready');
+      addLine(`Simulation ready (id: ${session.simulation_id.slice(0, 8)}…)`, 'success');
+    } catch (err) {
+      const msg = err instanceof APIError ? err.message : String(err);
+      addLine(`Simulation init failed: ${msg}`, 'error');
+      setAppStatus('error');
+    }
+  };
+
+  // ── Step ──────────────────────────────────────────────────────────────────
+
+  const handleStep = async () => {
+    if (!simId || appStatus === 'stepping' || appStatus === 'running') return;
+    setAppStatus('stepping');
+    try {
+      const res = await stepSimulation(simId);
+      applyState(res.state);
+      if (res.last_instruction) {
+        addLine(`→ ${res.last_instruction}  (PC: 0x${hexFmt(res.state.pc)})`, 'info');
+      }
+      if (!res.state.halted) setAppStatus('ready');
+    } catch (err) {
+      const msg = err instanceof APIError ? err.message : String(err);
+      addLine(`Step error: ${msg}`, 'error');
+      setAppStatus('error');
+    }
+  };
+
+  // ── Run ───────────────────────────────────────────────────────────────────
+
+  const handleRun = async () => {
+    if (!simId || appStatus === 'running') return;
+    setAppStatus('running');
+    addLine('Running program…', 'system');
+    try {
+      const res = await runSimulation(simId, 10000);
+      applyState(res.state);
+      addLine(
+        `Run complete — ${res.cycles_executed} cycles, reason: ${res.halt_reason}`,
+        res.halt_reason === 'halted' ? 'success' : 'info',
+      );
+      if (res.state.output) addLine(res.state.output, 'success');
+    } catch (err) {
+      const msg = err instanceof APIError ? err.message : String(err);
+      addLine(`Run error: ${msg}`, 'error');
+      setAppStatus('error');
+    }
+  };
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+
+  const handleReset = async () => {
+    if (!simId) return;
+    setAppStatus('resetting');
+    setPrevRegs({});
+    try {
+      const res = await resetSimulation(simId);
+      applyState(res.state);
+      setAppStatus('ready');
+      addLine('Processor reset.', 'system');
+    } catch (err) {
+      const msg = err instanceof APIError ? err.message : String(err);
+      addLine(`Reset error: ${msg}`, 'error');
+      setAppStatus('error');
+    }
+  };
+
+  // ── ISA change ────────────────────────────────────────────────────────────
+
+  const handleIsaChange = (val: string) => {
+    setIsa(val);
+    setExample('');
+  };
 
   const handleExampleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
@@ -186,73 +325,18 @@ export default function App() {
     if (ex) setCode(ex.code);
   };
 
-  const handleIsaChange = (val: string) => {
-    setIsa(val);
-    setExample('');
-  };
-
-  const handleAssemble = async () => {
-    setAssembling(true);
-    setError(null);
-    setBinary(null);
-    setSimState(null);
-    setPrevRegs({});
-    setStatus('Assembling...');
-    addLine(`Assembling for ${isa.toUpperCase()}...`, 'system');
-
-    try {
-      const res = await assembleCode(code, isa);
-      if (res.success) {
-        setBinary(res.binary);
-        setStatus('Assembled');
-        const lineCount = res.binary.trim().split('\n').length;
-        addLine(`Assembly successful — ${lineCount} instruction(s) encoded.`, 'success');
-        setBottomTab('console');
-
-        if (socketRef.current) {
-          socketRef.current.init({ isa, memory_architecture: architecture, binary: res.binary });
-        }
-      } else {
-        const errMsg = res.error || 'Unknown assembly error';
-        setError(errMsg);
-        setStatus('Error');
-        addLine(`Error: ${errMsg}`, 'error');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      setStatus('Error');
-      addLine(`Network error: ${msg}`, 'error');
-    } finally {
-      setAssembling(false);
-    }
-  };
-
-  const handleRun = () => {
-    if (!socketRef.current) return;
-    socketRef.current.run();
-    setStatus('Running');
-    addLine('Running program...', 'system');
-  };
-
-  const handleStep = () => {
-    socketRef.current?.step();
-  };
-
-  const handleReset = () => {
-    socketRef.current?.reset();
-    setPrevRegs({});
-    addLine('Processor reset.', 'system');
-  };
-
   // ─── Derived ──────────────────────────────────────────────────────────────
 
   const lineCount   = code.split('\n').length;
   const lineNumbers = Array.from({ length: Math.max(1, lineCount) }, (_, i) => i + 1).join('\n');
   const memOffset   = parseInt(memAddrStr, 16) || 0;
-  const statusClass = getStatusClass(status);
   const isHalted    = simState?.halted ?? false;
-  const canSimulate = !!binary && !isHalted;
+  const busy        = appStatus === 'assembling' || appStatus === 'initializing' ||
+                      appStatus === 'stepping'   || appStatus === 'running' ||
+                      appStatus === 'resetting';
+  const canStep     = !!simId && !isHalted && !busy;
+  const canRun      = !!simId && !isHalted && appStatus !== 'running';
+  const canReset    = !!simId && !busy;
   const binaryLines = binary ? binary.trim().split('\n') : [];
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -269,7 +353,6 @@ export default function App() {
 
         <div className="topbar-divider" />
 
-        {/* ISA selector */}
         <div className="topbar-select-group">
           <label htmlFor="isa-select">ISA</label>
           <select
@@ -284,7 +367,6 @@ export default function App() {
           </select>
         </div>
 
-        {/* Architecture selector */}
         <div className="topbar-select-group">
           <label htmlFor="arch-select">Memory</label>
           <select
@@ -299,7 +381,6 @@ export default function App() {
           </select>
         </div>
 
-        {/* Example selector */}
         {currentExamples.length > 0 && (
           <div className="topbar-select-group">
             <label htmlFor="example-select">Example</label>
@@ -319,16 +400,20 @@ export default function App() {
 
         <div className="topbar-spacer" />
 
-        {/* Status */}
-        <div className={`status-badge ${statusClass}`}>
+        <div className={`status-badge ${statusClass(appStatus)}`}>
           <span className="dot" />
-          {status}
+          {statusLabel(appStatus)}
         </div>
 
-        {/* IP indicator */}
         {simState && (
           <div className="ip-badge">
-            IP: 0x{hex(simState.ip ?? 0)}
+            IP: 0x{hexFmt(simState.pc ?? 0)}
+          </div>
+        )}
+
+        {simState && (
+          <div className="ip-badge" style={{ color: 'var(--blue)', borderColor: 'rgba(91,155,255,0.2)', background: 'var(--blue-dim)' }}>
+            {simState.cycle_count} cycles
           </div>
         )}
       </header>
@@ -336,7 +421,7 @@ export default function App() {
       {/* ── Workspace ── */}
       <div className="workspace">
 
-        {/* ── Editor Panel ── */}
+        {/* ── Editor ── */}
         <div className="editor-panel">
           <div className="editor-toolbar">
             <div className="editor-tab active">
@@ -350,9 +435,7 @@ export default function App() {
           </div>
 
           <div className="editor-body">
-            <div className="line-numbers" ref={lineNumRef}>
-              {lineNumbers}
-            </div>
+            <div className="line-numbers" ref={lineNumRef}>{lineNumbers}</div>
             <textarea
               ref={editorRef}
               className="code-editor"
@@ -367,50 +450,31 @@ export default function App() {
             />
           </div>
 
-          {/* Action bar */}
           <div className="action-bar">
             <button
               className="btn btn-assemble"
               onClick={handleAssemble}
-              disabled={isAssembling}
+              disabled={busy}
             >
               <IconBuild />
-              {isAssembling ? 'Assembling…' : 'Assemble & Load'}
+              {appStatus === 'assembling' ? 'Assembling…' : appStatus === 'initializing' ? 'Loading…' : 'Assemble & Load'}
             </button>
 
             <div className="action-bar-spacer" />
 
-            <button
-              className="btn btn-run"
-              onClick={handleRun}
-              disabled={!canSimulate || status === 'Running'}
-              title="Run entire program"
-            >
-              <IconPlay />
-              Run
+            <button className="btn btn-run"  onClick={handleRun}   disabled={!canRun}  title="Run all instructions">
+              <IconPlay /> Run
             </button>
-            <button
-              className="btn btn-step"
-              onClick={handleStep}
-              disabled={!canSimulate || status === 'Running'}
-              title="Step one instruction"
-            >
-              <IconStep />
-              Step
+            <button className="btn btn-step" onClick={handleStep}  disabled={!canStep} title="Step one instruction">
+              <IconStep /> Step
             </button>
-            <button
-              className="btn btn-reset"
-              onClick={handleReset}
-              disabled={!binary}
-              title="Reset processor"
-            >
-              <IconReset />
-              Reset
+            <button className="btn btn-reset" onClick={handleReset} disabled={!canReset} title="Reset CPU">
+              <IconReset /> Reset
             </button>
           </div>
         </div>
 
-        {/* ── Right Panel ── */}
+        {/* ── Right panel ── */}
         <div className="right-panel">
           <div className="panel-tabs">
             <button
@@ -427,10 +491,9 @@ export default function App() {
             </button>
           </div>
 
-          {/* Registers tab */}
+          {/* Registers */}
           {rightTab === 'registers' && (
             <div className="panel-section">
-              {/* Flags */}
               <div className="flags-row">
                 {(['Z', 'C', 'O', 'N'] as const).map(f => {
                   const active = simState?.flags?.[f] ?? false;
@@ -442,11 +505,7 @@ export default function App() {
                   );
                 })}
               </div>
-
-              <div className="panel-section-title">
-                General Purpose & Special
-              </div>
-
+              <div className="panel-section-title">General Purpose & Special</div>
               <div className="registers-scroll">
                 {simState ? (
                   Object.entries(simState.registers).map(([name, val]) => {
@@ -455,7 +514,7 @@ export default function App() {
                       <div key={name} className={`register-row ${changed ? 'changed' : ''}`}>
                         <span className="reg-name">{name}</span>
                         <div className="reg-values">
-                          <span className="reg-hex">0x{hex(val)}</span>
+                          <span className="reg-hex">0x{hexFmt(val)}</span>
                           <span className="reg-dec">{val}</span>
                         </div>
                       </div>
@@ -470,7 +529,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Memory tab */}
+          {/* Memory */}
           {rightTab === 'memory' && (
             <div className="panel-section">
               <div className="memory-panel">
@@ -491,7 +550,6 @@ export default function App() {
                   />
                   <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>base</span>
                 </div>
-
                 <div className="memory-scroll">
                   {simState?.memory ? (
                     Array.from({ length: 16 }).map((_, row) => {
@@ -503,7 +561,7 @@ export default function App() {
                         const addr = base + i;
                         if (addr < simState.memory.length) {
                           const v = simState.memory[addr];
-                          bytes.push(hex(v, 2));
+                          bytes.push(hexFmt(v, 2));
                           ascii += v >= 32 && v <= 126 ? String.fromCharCode(v) : '·';
                         } else {
                           bytes.push('--');
@@ -512,11 +570,9 @@ export default function App() {
                       }
                       return (
                         <div key={base} className="memory-row">
-                          <span className="mem-addr">{hex(base, 4)}</span>
+                          <span className="mem-addr">{hexFmt(base, 4)}</span>
                           <div className="mem-bytes">
-                            {bytes.map((b, i) => (
-                              <span key={i} className="mem-byte">{b}</span>
-                            ))}
+                            {bytes.map((b, i) => <span key={i} className="mem-byte">{b}</span>)}
                           </div>
                           <span className="mem-ascii">{ascii}</span>
                         </div>
@@ -539,7 +595,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Bottom Output ── */}
+      {/* ── Bottom output ── */}
       <div className="output-area">
         <div className="output-tabs">
           <button
@@ -557,13 +613,9 @@ export default function App() {
         </div>
 
         <div className="output-content" ref={consoleRef}>
-          {bottomTab === 'console' && (
-            <>
-              {consoleLines.map((line, i) => (
-                <span key={i} className={`output-line ${line.type}`}>{line.text}</span>
-              ))}
-            </>
-          )}
+          {bottomTab === 'console' && console_.map((line, i) => (
+            <span key={i} className={`output-line ${line.type}`}>{line.text}</span>
+          ))}
 
           {bottomTab === 'binary' && (
             binary ? (
@@ -581,7 +633,6 @@ export default function App() {
           )}
         </div>
       </div>
-
     </div>
   );
 }

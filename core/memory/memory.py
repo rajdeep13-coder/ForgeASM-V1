@@ -20,12 +20,15 @@ class MemoryBank:
             raise OutOfBoundsError(f"Write address {address} out of bounds")
             
     def read_word(self, address: int) -> int:
-        # Assuming little-endian for now, or we can make it configurable
-        # Most of the original was acting sequentially on bitarrays. 
-        # Since we use bytearray, let's stick to Big Endian as it's easier to read visually, or Little Endian.
-        # Let's do Big Endian: high byte at address, low byte at address+1
-        if 0 <= address < self.size - 1:
-            return (self.data[address] << 8) | self.data[address+1]
+        # Big Endian: high byte at address, low byte at address+1.
+        # If the address is the very last byte, read the high byte and treat
+        # the missing low byte as 0 rather than crashing — this handles the
+        # common case where SP is initialised to 0xFFFF and the first pop
+        # reads from the boundary before any data has been pushed.
+        if 0 <= address < self.size:
+            high = self.data[address]
+            low  = self.data[address + 1] if address + 1 < self.size else 0
+            return (high << 8) | low
         raise OutOfBoundsError(f"Read word address {address} out of bounds")
         
     def write_word(self, address: int, value: int):

@@ -6,10 +6,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      // All /api requests are forwarded to the FastAPI backend.
+      // No WebSocket proxy entry needed – the API is pure HTTP.
       '/api': {
-        target: 'http://localhost:8000',
-        ws: true
-      }
-    }
-  }
+        target: process.env.VITE_API_URL ?? 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
