@@ -5,3 +5,5 @@
 - Added a local-first Gemma Copilot backend vertical slice with a constrained
   assemble-and-run tool, server-owned deterministic task checking, and a
   benchmark task seed.
+- Added structured assembler diagnostics, opt-in strict opcode execution,
+  in-process `run_program`, the ground-truth audit, and CI test workflow.

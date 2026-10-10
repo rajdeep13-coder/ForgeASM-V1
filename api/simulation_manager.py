@@ -146,12 +146,14 @@ class Simulation:
         memory_architecture: str,
         binary: str,
         program_start: int,
+        strict: bool = False,
     ) -> None:
         self.simulation_id = simulation_id
         self.isa_name = isa_name.lower()
         self.memory_architecture = memory_architecture.lower()
         self.binary = binary
         self.program_start = program_start
+        self.strict = strict
         self.cycle_count: int = 0
 
         # Build CPU for the first time
@@ -170,7 +172,7 @@ class Simulation:
             mem = VonNeumannMemory()
 
         io_sys = MemoryMappedIO(mem)
-        return CPU(isa, mem, io_sys)
+        return CPU(isa, mem, io_sys, strict=self.strict)
 
     def reset(self) -> None:
         """Rebuild the CPU from scratch and reload the original binary."""
@@ -286,6 +288,7 @@ class SimulationManager:
         memory_architecture: str,
         binary: str,
         program_start: int = 0,
+        strict: bool = False,
     ) -> Simulation:
         """
         Create a new Simulation, store it, and return it.
@@ -299,6 +302,7 @@ class SimulationManager:
             memory_architecture=memory_architecture,
             binary=binary,
             program_start=program_start,
+            strict=strict,
         )
         with self._lock:
             self._sessions[simulation_id] = sim

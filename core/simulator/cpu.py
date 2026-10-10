@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional
 from core.isa.isa_def import ISA, InstructionDef, RegisterDef
 from core.memory.memory import MemorySystem
 from core.io.io import IOSystem
+from core.simulator.exceptions import SimulationError
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +19,40 @@ def twos_complement(val: int, bits: int) -> int:
 
 
 class CPU:
-    def __init__(self, isa: ISA, memory: MemorySystem, io_sys: IOSystem):
+    _IMPLEMENTED = {
+        "risc1": {
+            "halt", "nop", "mov", "add", "sub", "mul", "div", "and", "or",
+            "xor", "not", "lsh", "rsh", "cmpe", "cmpb", "jmp", "jc", "call",
+            "ret", "load", "loadf", "store", "storef", "push", "pushf", "pop",
+            "popf", "out", "in", "dup", "dup2", "swap",
+        },
+        "risc2": {
+            "halt", "nop", "mov", "add", "sub", "mul", "div", "and", "or",
+            "xor", "not", "lsh", "rsh", "inc", "dec", "cmp", "test", "jmp",
+            "je", "jne", "jg", "jge", "jl", "jle", "call", "ret", "load",
+            "loadf", "loadi", "store", "storef", "storei", "push", "pushf",
+            "pushi", "pop", "popf", "popi", "out", "in",
+        },
+        "risc3": {
+            "halt", "nop", "mov", "mov_low", "mov_high", "add", "addc", "sub",
+            "mul", "div", "and", "or", "xor", "not", "lsh", "rsh", "cmp",
+            "test", "jmp", "je", "jne", "jg", "jge", "jl", "jle", "call",
+            "ret", "load", "store", "push", "pop", "out", "in",
+        },
+        "cisc": {
+            "halt", "nop", "mov", "add", "sub", "mul", "div", "and", "or",
+            "xor", "not", "lsh", "rsh", "inc", "dec", "cmp", "test", "jmp",
+            "je", "jne", "jg", "jge", "jl", "jle", "call", "ret", "enter",
+            "leave", "load", "store", "push", "pop", "out", "in",
+        },
+    }
+
+    def __init__(self, isa: ISA, memory: MemorySystem, io_sys: IOSystem, strict: bool = False):
         self.isa = isa
         self.memory = memory
         self.io = io_sys
+        self.strict = strict
+        self.cycle_count = 0
 
         # Initialise all registers to 0
         self.registers: Dict[str, int] = {}
@@ -434,8 +465,21 @@ class CPU:
 
         inst_def = self.isa.get_instruction_by_opcode(opcode_str)
         if not inst_def:
+            if self.strict:
+                raise SimulationError(
+                    f"Unknown opcode {opcode_str} at PC {pc}",
+                    cycle=self.cycle_count, pc=pc, opcode=opcode_str,
+                    kind="unknown_opcode",
+                )
             self.halted = True
             return
+
+        if self.strict and inst_def.name not in self._IMPLEMENTED.get(isa_name, set()):
+            raise SimulationError(
+                f"Opcode {opcode_str} maps to unimplemented mnemonic '{inst_def.name}'",
+                cycle=self.cycle_count, pc=pc, opcode=opcode_str,
+                kind="unimplemented_opcode",
+            )
 
         if inst_def.name == "halt":
             self.halted = True
@@ -1119,6 +1163,7 @@ class CPU:
 
     def step(self):
         self.decode_and_execute()
+        self.cycle_count += 1
 
     def run(self, max_cycles: int = 10000):
         from core.memory.exceptions import MemoryError as MemErr

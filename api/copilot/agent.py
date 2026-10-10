@@ -67,6 +67,7 @@ def _execute_tool(task: TaskSpec, call: ToolCall) -> Dict[str, Any]:
         memory_architecture=task.memory_architecture,
         binary=binary,
         program_start=0,
+        strict=True,
     )
     try:
         cycles, halt_reason = simulation.run(max_cycles=max_cycles)

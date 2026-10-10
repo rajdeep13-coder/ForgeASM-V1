@@ -30,6 +30,7 @@ from api.routes.copilot import router as copilot_router
 from core.isa.isa_def import ISA
 from core.isa.exceptions import InvalidISAError
 from core.assembler.assembler import Assembler
+from core.assembler.exceptions import AssemblerError
 
 
 # ─── Application ──────────────────────────────────────────────────────────────
@@ -94,9 +95,15 @@ async def assemble_code(req: AssembleRequest) -> AssembleResponse:
         binary = assembler.assemble(req.code)
         return AssembleResponse(binary=binary, success=True)
     except InvalidISAError as exc:
-        return AssembleResponse(binary="", error=str(exc), success=False)
+        return AssembleResponse(binary="", error=str(exc), success=False,
+                                errors=[{"kind": "invalid_isa", "message": str(exc)}])
+    except AssemblerError as exc:
+        return AssembleResponse(
+            binary="", error=str(exc), success=False, errors=[exc.as_dict()]
+        )
     except Exception as exc:
-        return AssembleResponse(binary="", error=str(exc), success=False)
+        return AssembleResponse(binary="", error=str(exc), success=False,
+                                errors=[{"kind": "assembly_error", "message": str(exc)}])
 
 
 # ─── ISA metadata ─────────────────────────────────────────────────────────────

@@ -144,6 +144,7 @@ class AssembleResponse(BaseModel):
     binary: str = Field(default="", description="Newline-separated binary bit strings")
     error: Optional[str] = Field(default=None, description="Error message if assembly failed")
     success: bool
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class CopilotRunRequest(BaseModel):

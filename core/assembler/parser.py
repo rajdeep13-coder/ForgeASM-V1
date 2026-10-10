@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from typing import List, Dict, Any, Union
-from core.assembler.exceptions import AssemblerError
+from core.assembler.exceptions import AssemblerError, AssemblerErrorKind
 
 @dataclass
 class ParsedLine:
@@ -55,14 +55,23 @@ class Parser:
     def _process_directive(self, line: str, line_number: int, original_text: str, current_instr_index: int):
         words = line.split()
         if not words:
-            raise AssemblerError("Empty directive", line_number, original_text)
+            raise AssemblerError(
+                "Empty directive", line_number, original_text,
+                kind=AssemblerErrorKind.INVALID_DIRECTIVE,
+            )
             
         label = words[0]
         if not label.isalnum() and not all(c.isalnum() or c == '_' for c in label):
-            raise AssemblerError(f"Invalid label name: {label}", line_number, original_text)
+            raise AssemblerError(
+                f"Invalid label name: {label}", line_number, original_text,
+                kind=AssemblerErrorKind.INVALID_DIRECTIVE, token=label,
+            )
             
         if label in self.jump_labels or label in self.mov_labels:
-            raise AssemblerError(f"Duplicate label: {label}", line_number, original_text)
+            raise AssemblerError(
+                f"Duplicate label: {label}", line_number, original_text,
+                kind=AssemblerErrorKind.DUPLICATE_LABEL, token=label,
+            )
             
         if len(words) == 1:
             # Jump label
@@ -71,7 +80,10 @@ class Parser:
             # Data directive e.g., label db value
             directive_type = words[1].lower()
             if directive_type not in ['db', 'dw', 'word', 'byte']:
-                raise AssemblerError(f"Unknown directive: {directive_type}", line_number, original_text)
+                raise AssemblerError(
+                    f"Unknown directive: {directive_type}", line_number, original_text,
+                    kind=AssemblerErrorKind.INVALID_DIRECTIVE, token=directive_type,
+                )
             
             is_byte = directive_type in ['db', 'byte']
             value_str = ' '.join(words[2:])
@@ -80,9 +92,17 @@ class Parser:
                 decoded_val = self._decode_directive_value(is_byte, value_str)
                 self.mov_labels[label] = decoded_val
             except ValueError as e:
-                raise AssemblerError(str(e), line_number, original_text)
+                raise AssemblerError(
+                    str(e), line_number, original_text,
+                    kind=AssemblerErrorKind.RANGE_ERROR if "bounds" in str(e)
+                    else AssemblerErrorKind.BAD_OPERAND,
+                    token=value_str,
+                )
         else:
-            raise AssemblerError("Invalid directive format. Use '.label' or '.label db value'", line_number, original_text)
+            raise AssemblerError(
+                "Invalid directive format. Use '.label' or '.label db value'",
+                line_number, original_text, kind=AssemblerErrorKind.INVALID_DIRECTIVE,
+            )
 
     def _decode_directive_value(self, is_byte: bool, value: str) -> Union[int, List[int]]:
         limits = (-127, 255) if is_byte else (-32768, 65535)

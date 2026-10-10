@@ -21,7 +21,7 @@ lands exactly on the target instruction's PC address.
 from typing import List, Dict, Tuple
 from core.isa.isa_def import ISA, InstructionDef
 from core.assembler.parser import Parser, ParsedLine
-from core.assembler.exceptions import AssemblerError
+from core.assembler.exceptions import AssemblerError, AssemblerErrorKind
 
 
 class Assembler:
@@ -183,6 +183,10 @@ class Assembler:
             raise AssemblerError(
                 f"Unknown instruction: {p_line.instruction}",
                 p_line.line_number, p_line.original_text,
+                kind=AssemblerErrorKind.UNKNOWN_MNEMONIC,
+                column=1,
+                token=p_line.instruction,
+                hint="Use a mnemonic defined for the selected ISA.",
             )
 
         last_error = None
@@ -206,6 +210,9 @@ class Assembler:
             raise AssemblerError(
                 f"Expected {len(op_types)} operands, got {len(p_line.operands)}",
                 p_line.line_number, p_line.original_text,
+                kind=AssemblerErrorKind.BAD_OPERAND,
+                token=p_line.instruction,
+                hint="Check the operand count and operand forms for this mnemonic.",
             )
 
         opcode = inst_def.opcode
@@ -271,6 +278,9 @@ class Assembler:
                 raise AssemblerError(
                     f"Invalid register: {operand}",
                     p_line.line_number, p_line.original_text,
+                    kind=AssemblerErrorKind.BAD_OPERAND,
+                    token=operand,
+                    hint="Use a register declared by the selected ISA.",
                 )
             return [(reg.encoding, "reg")]
 
@@ -288,6 +298,8 @@ class Assembler:
                 raise AssemblerError(
                     f"Expected offset in {operand}",
                     p_line.line_number, p_line.original_text,
+                    kind=AssemblerErrorKind.BAD_OPERAND,
+                    token=operand,
                 )
             reg_name = clean[:idx]
             off_str = clean[idx + 1:]
@@ -296,6 +308,8 @@ class Assembler:
                 raise AssemblerError(
                     f"Invalid register: {reg_name}",
                     p_line.line_number, p_line.original_text,
+                    kind=AssemblerErrorKind.BAD_OPERAND,
+                    token=reg_name,
                 )
             try:
                 if off_str.startswith("$"):
@@ -305,6 +319,8 @@ class Assembler:
                 raise AssemblerError(
                     f"Invalid offset: {off_str}",
                     p_line.line_number, p_line.original_text,
+                    kind=AssemblerErrorKind.BAD_OPERAND,
+                    token=off_str,
                 )
             imm_bits = self._encode_number(offset, 16, p_line)
             return [(reg.encoding, "reg"), (imm_bits, "imm")]
@@ -330,6 +346,9 @@ class Assembler:
                     raise AssemblerError(
                         f"Unknown or invalid label usage: {label}",
                         p_line.line_number, p_line.original_text,
+                        kind=AssemblerErrorKind.UNDEFINED_LABEL,
+                        token=label,
+                        hint="Declare the label with a .label directive before assembling.",
                     )
             else:
                 try:
@@ -338,6 +357,8 @@ class Assembler:
                     raise AssemblerError(
                         f"Invalid immediate: {val_str}",
                         p_line.line_number, p_line.original_text,
+                        kind=AssemblerErrorKind.BAD_OPERAND,
+                        token=val_str,
                     )
                 # For RISC3, raw literal jump offsets are in instruction units.
                 # Scale by 2 to convert to PC-unit (byte) offsets since RISC3
@@ -363,6 +384,8 @@ class Assembler:
         raise AssemblerError(
             f"Unsupported operand type: {op_type}",
             p_line.line_number, p_line.original_text,
+            kind=AssemblerErrorKind.BAD_OPERAND,
+            token=operand,
         )
 
     def _encode_number(self, num: int, bit_len: int, p_line: ParsedLine) -> str:
@@ -371,6 +394,9 @@ class Assembler:
             raise AssemblerError(
                 f"Immediate {num} out of bounds for {bit_len} bits",
                 p_line.line_number, p_line.original_text,
+                kind=AssemblerErrorKind.RANGE_ERROR,
+                token=str(num),
+                hint=f"Use a value representable in {bit_len} bits.",
             )
         if num < 0:
             num = (1 << bit_len) + num
