@@ -14,6 +14,7 @@ from api.copilot.tasks import TaskError, load_task
 from api.models import (
     APIError, CopilotRunRequest, CopilotRunResponse,
     CopilotTranslateRequest, CopilotTranslateResponse,
+    CopilotMultimodalRequest, CopilotMultimodalResponse,
 )
 from copilot.gateway import (
     GatewayConfigurationError,
@@ -21,6 +22,7 @@ from copilot.gateway import (
     ModelUnavailable,
 )
 from copilot.translation import TranslationAgent, TranslationSpec, TranslationVector
+from copilot.multimodal import solve_confirmed_spec, transcribe_image
 
 router = APIRouter(prefix="/api/copilot", tags=["Copilot"])
 _gateway: ModelGateway | None = None
@@ -171,3 +173,48 @@ async def translation_episodes() -> JSONResponse:
             except (OSError, json.JSONDecodeError):
                 continue
     return JSONResponse(content={"episodes": episodes[:100]})
+
+
+@router.post(
+    "/multimodal",
+    response_model=CopilotMultimodalResponse,
+    summary="Transcribe a user image, or solve its user-confirmed specification",
+)
+async def copilot_multimodal(req: CopilotMultimodalRequest, request: Request) -> JSONResponse:
+    try:
+        model_gateway = gateway()
+        model_gateway.set_session_id(request.headers.get("X-Session-ID", "default"))
+        if req.confirmed_spec is not None:
+            result = solve_confirmed_spec(
+                model_gateway, req.isa.lower(), req.confirmed_spec, req.max_repairs,
+            )
+            return CopilotMultimodalResponse(
+                stage="solved", result=result,
+                checker_basis="user_confirmed_spec",
+            )
+        if not req.image_data_url:
+            raise ValueError("image_data_url is required before confirmation")
+        transcription = transcribe_image(model_gateway, req.image_data_url)
+        return CopilotMultimodalResponse(
+            stage="confirm", spec=transcription["spec"], model=transcription["model"],
+        )
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content=APIError(error=str(exc), code="IMAGE_INPUT_UNAVAILABLE").model_dump(),
+        )
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=APIError(error=str(exc), code="INVALID_MULTIMODAL_INPUT").model_dump(),
+        )
+    except GatewayConfigurationError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=APIError(error=str(exc), code="COPILOT_NOT_CONFIGURED").model_dump(),
+        )
+    except (ProviderRequestError, ModelUnavailable) as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=APIError(error=str(exc), code="COPILOT_PROVIDER_ERROR").model_dump(),
+        )

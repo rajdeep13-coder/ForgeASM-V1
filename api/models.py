@@ -175,3 +175,18 @@ class CopilotTranslateResponse(BaseModel):
     verdict: str
     translation: Optional[Dict[str, Any]] = None
     results: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class CopilotMultimodalRequest(BaseModel):
+    isa: str = Field(..., min_length=1, max_length=20)
+    image_data_url: Optional[str] = Field(default=None, max_length=8_000_000)
+    confirmed_spec: Optional[Dict[str, Any]] = None
+    max_repairs: int = Field(default=4, ge=0, le=4)
+
+
+class CopilotMultimodalResponse(BaseModel):
+    stage: str
+    spec: Optional[Dict[str, Any]] = None
+    result: Optional[Dict[str, Any]] = None
+    model: Optional[Dict[str, Any]] = None
+    checker_basis: Optional[str] = None

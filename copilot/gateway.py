@@ -200,6 +200,13 @@ class CloudBackend:
             contents = []
             for message in messages:
                 parts = [message.get("content", "")]
+                if images and message.get("role") == "user":
+                    parts.extend({
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": base64.b64encode(image).decode("ascii"),
+                        }
+                    } for image in images)
                 contents.append({"role": message.get("role", "user"), "parts": parts})
             config: Dict[str, Any] = {}
             if tools:

@@ -19,3 +19,6 @@
 - Added simulator-verified ISA translation with explicit neutral observables,
   bounded repair episodes, translation API/UI, reference fixtures, and
   generated translation expansion metrics.
+- Added capability-gated multimodal photo transcription with client-side
+  EXIF-stripping/downscaling, user confirmation, strict checker limits, and
+  prompt-injection safeguards.

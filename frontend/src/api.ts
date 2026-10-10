@@ -151,6 +151,14 @@ export interface CopilotTranslationResult {
   results: Array<Record<string, unknown>>;
 }
 
+export interface CopilotMultimodalResponse {
+  stage: 'confirm' | 'solved';
+  spec?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  model?: Record<string, unknown>;
+  checker_basis?: string;
+}
+
 // ─── Assembler ────────────────────────────────────────────────────────────────
 
 export async function assembleCode(code: string, isa: string): Promise<AssembleResult> {
@@ -211,5 +219,21 @@ export async function translateCopilot(
 ): Promise<CopilotTranslationResult> {
   return request<CopilotTranslationResult>('POST', '/api/copilot/translate', {
     source_isa: sourceIsa, target_isa: targetIsa, source, max_repairs: maxRepairs,
+  });
+}
+
+export async function transcribeCopilotImage(
+  isa: string, imageDataUrl: string,
+): Promise<CopilotMultimodalResponse> {
+  return request<CopilotMultimodalResponse>('POST', '/api/copilot/multimodal', {
+    isa, image_data_url: imageDataUrl,
+  });
+}
+
+export async function solveCopilotConfirmedSpec(
+  isa: string, confirmedSpec: Record<string, unknown>, maxRepairs = 4,
+): Promise<CopilotMultimodalResponse> {
+  return request<CopilotMultimodalResponse>('POST', '/api/copilot/multimodal', {
+    isa, confirmed_spec: confirmedSpec, max_repairs: maxRepairs,
   });
 }

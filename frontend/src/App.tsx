@@ -5,6 +5,7 @@ import {
   runSimulation, resetSimulation, deleteSimulation,
   getExamples, APIError,
   getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, runCopilot, translateCopilot,
+  transcribeCopilotImage, solveCopilotConfirmedSpec,
   type ExamplesByISA, type SimState,
   type CopilotCapabilities, type CopilotTelemetry, type CopilotEpisode,
 } from './api';
@@ -337,6 +338,10 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
   const [targetIsa, setTargetIsa] = useState('risc3');
   const [translationSource, setTranslationSource] = useState('');
   const [translation, setTranslation] = useState<Record<string, unknown> | null>(null);
+  const [photoData, setPhotoData] = useState<string | null>(null);
+  const [photoBytes, setPhotoBytes] = useState(0);
+  const [photoSpec, setPhotoSpec] = useState<Record<string, unknown> | null>(null);
+  const [photoResult, setPhotoResult] = useState<Record<string, unknown> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -399,6 +404,50 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
     }
   };
 
+  const preparePhoto = async (file: File) => {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not prepare image canvas.');
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+    setPhotoData(dataUrl);
+    setPhotoBytes(Math.max(0, Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75)));
+    setPhotoSpec(null);
+    setPhotoResult(null);
+  };
+
+  const transcribePhoto = async () => {
+    if (!photoData || !capabilities?.supports_images || running) return;
+    setRunning(true); setError(null);
+    try {
+      const response = await transcribeCopilotImage(isa, photoData);
+      setPhotoSpec(response.spec ?? null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const solvePhoto = async () => {
+    if (!photoSpec || running) return;
+    setRunning(true); setError(null);
+    try {
+      const response = await solveCopilotConfirmedSpec(isa, photoSpec);
+      setPhotoResult(response.result ?? null);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <aside className="copilot-panel" aria-label="Copilot">
       <div className="copilot-header">
@@ -442,6 +491,61 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
           {capabilities?.error && !error && (
             <div className="copilot-error" role="alert">{capabilities.error}</div>
           )}
+          <div className="copilot-body multimodal-card">
+            <h3>Photo input</h3>
+            {!capabilities?.supports_images ? (
+              <div className="copilot-error" role="status">
+                Photo input is hidden because the active model does not support images.
+                {capabilities?.error ? ` ${capabilities.error}` : ''}
+              </div>
+            ) : (
+              <>
+                <label htmlFor="copilot-photo">Upload pseudocode or flowchart</label>
+                <input id="copilot-photo" type="file" accept="image/png,image/jpeg"
+                  onChange={event => {
+                    const file = event.target.files?.[0];
+                    if (file) void preparePhoto(file).catch(caught =>
+                      setError(caught instanceof Error ? caught.message : String(caught)));
+                  }} />
+                {photoData && (
+                  <>
+                    <img className="copilot-photo-preview" src={photoData} alt="Exactly the image sent to the model" />
+                    <div className="logbook-summary">Exactly sent: JPEG, {photoBytes} bytes, EXIF stripped, max dimension 1600px.</div>
+                    <button className="btn btn-assemble copilot-generate" onClick={transcribePhoto}
+                      disabled={running}>
+                      {running ? 'Reading image…' : 'Read image'}
+                    </button>
+                  </>
+                )}
+                {photoSpec && (
+                  <>
+                    <div className="copilot-warning">
+                      Confirm or edit this transcription. The checker will use only these values.
+                    </div>
+                    <textarea aria-label="Confirmed photo specification" rows={10}
+                      value={JSON.stringify(photoSpec, null, 2)}
+                      onChange={event => {
+                        try { setPhotoSpec(JSON.parse(event.target.value) as Record<string, unknown>); }
+                        catch { /* Keep the last valid spec until JSON is corrected. */ }
+                      }} />
+                    <button className="btn btn-assemble copilot-generate" onClick={solvePhoto}
+                      disabled={running}>
+                      {running ? 'Generating and verifying…' : 'Confirm spec and generate'}
+                    </button>
+                  </>
+                )}
+                {photoResult && (
+                  <div className="copilot-result">
+                    <div className={`copilot-verdict ${photoResult.verdict === 'passed' ? 'pass' : 'fail'}`}>
+                      {photoResult.verdict === 'passed' ? 'PASS' : 'FAIL'}
+                    </div>
+                    <div className="logbook-summary">Checker basis: user-confirmed values.</div>
+                    <pre className="copilot-code">{JSON.stringify(photoResult, null, 2)}</pre>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           {result && (
             <div className="copilot-result">
               <div className={`copilot-verdict ${result.status === 'passed' ? 'pass' : 'fail'}`}>
