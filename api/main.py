@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.models import AssembleRequest, AssembleResponse
 from api.routes.simulation import router as simulation_router
+from api.routes.copilot import router as copilot_router
 from core.isa.isa_def import ISA
 from core.isa.exceptions import InvalidISAError
 from core.assembler.assembler import Assembler
@@ -69,6 +70,7 @@ app.add_middleware(
 # ─── Routers ──────────────────────────────────────────────────────────────────
 
 app.include_router(simulation_router)
+app.include_router(copilot_router)
 
 
 # ─── Assemble ─────────────────────────────────────────────────────────────────

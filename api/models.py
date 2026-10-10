@@ -21,7 +21,7 @@ class SimulationCreateRequest(BaseModel):
     )
     memory_architecture: str = Field(
         default="neumann",
-        description="Memory architecture: 'neumann' (Von Neumann) or 'harvard'",
+        description="Memory architecture: 'neumann' or 'harvard'",
         examples=["neumann"],
     )
     binary: str = Field(
@@ -144,3 +144,19 @@ class AssembleResponse(BaseModel):
     binary: str = Field(default="", description="Newline-separated binary bit strings")
     error: Optional[str] = Field(default=None, description="Error message if assembly failed")
     success: bool
+
+
+class CopilotRunRequest(BaseModel):
+    """Run Gemma against a server-owned evaluation task."""
+    task_id: str = Field(..., min_length=1, max_length=100)
+    max_iterations: int = Field(default=4, ge=1, le=8)
+
+
+class CopilotRunResponse(BaseModel):
+    """Deterministic result of a Copilot attempt."""
+    task_id: str
+    status: str
+    iterations: int
+    attempts: List[Dict[str, Any]] = Field(default_factory=list)
+    final: Optional[Dict[str, Any]] = None
+    explanation: Optional[str] = None
