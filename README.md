@@ -1,232 +1,84 @@
 # ForgeASM
 
-A configurable hardware architecture simulator and assembler.  
-Write assembly, assemble it to machine code, load it into a simulated CPU, and step through execution — all from a browser.
+ForgeASM is a local-first hardware architecture lab where Gemma learns a custom ISA in context, writes assembly, repairs it through assembler/simulator tools, and earns a pass only from a deterministic checker.
 
----
+## 30-second demo
 
-## What Is ForgeASM?
+The demo capture should show: describe a task → inspect the repair loop in
+Copilot Logbook → see the verified pass badge. Capture instructions are in
+[docs/DEMO.md](docs/DEMO.md); benchmark numbers below are generated from
+`eval/results.json`. No unrecorded GIF is presented as evidence.
 
-ForgeASM is a computer-architecture learning tool that implements four distinct instruction set architectures (ISAs) from scratch, each with its own register file, instruction encoding, and execution model.  It lets you:
+## Why Gemma 4
 
-- Write assembly source code in an in-browser editor
-- Assemble it to a binary using a multi-pass assembler
-- Execute it on a cycle-accurate CPU simulator
-- Inspect registers, flags, and memory in real time
+Gemma is a strong fit for constrained, local-first reasoning: the model must learn one of four unusual ISAs from a compact card, emit only assembly/tool arguments, and recover from concrete assembler and simulator feedback. Open weights make the same experiment reproducible in classrooms and private labs.
 
----
-
-## Architecture
-
-```
-Assembly Source
-     │
-     ▼
- Assembler  ──────────────────────────────────────────────────────┐
-     │                                                            │
-     │  Binary (newline-separated bit strings)                   │
-     ▼                                                            │
- POST /api/simulations                                           │
-     │                                                            │
-     ▼                                                            │
- SimulationManager  (in-memory session store)                    │
-     │                                                            │
-     ▼                                                            │
- Simulation                                                       │
-     ├── CPU  ─────────── registers / ALU / flags / PC           │
-     ├── Memory  ─────── Von Neumann | Harvard                   │
-     └── I/O  ────────── Memory-mapped I/O                       │
-                                                                  │
-ForgeASM Core  ◄──────────────────────────────────────────────────┘
-(completely transport-agnostic: no FastAPI, no HTTP, no sockets)
-```
-
-The core simulation engine (`core/`) has zero knowledge of HTTP or the frontend.  The FastAPI layer is purely a transport adapter on top of it.
-
----
-
-## Supported ISAs
-
-| ISA    | Architecture       | Key Feature                   |
-|--------|--------------------|-------------------------------|
-| RISC-1 | Stack              | Operands implicitly from TOS  |
-| RISC-2 | Accumulator        | Single accumulator register   |
-| RISC-3 | Register-register  | General-purpose register file |
-| CISC   | Register + memory  | Multi-byte variable-length instructions |
-
-Both **Von Neumann** (unified instruction/data memory) and **Harvard** (separate instruction/data buses) memory architectures are supported.
-
----
-
-## REST API
-
-The simulation is controlled entirely over HTTP.  There are no WebSockets.
-
-### Assembler
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/assemble` | Assemble source code → binary |
-| `GET`  | `/api/isa/{name}` | Register and instruction definitions |
-| `GET`  | `/api/examples` | Example programs for each ISA |
-
-### Simulation Lifecycle
-
-| Method   | Path | Description |
-|----------|------|-------------|
-| `POST`   | `/api/simulations` | Create and initialize a simulation session |
-| `GET`    | `/api/simulations/{id}` | Inspect current CPU state |
-| `POST`   | `/api/simulations/{id}/step` | Execute exactly one instruction |
-| `POST`   | `/api/simulations/{id}/run` | Run up to `max_cycles` instructions |
-| `POST`   | `/api/simulations/{id}/reset` | Reset CPU to initial loaded state |
-| `DELETE` | `/api/simulations/{id}` | Delete the session |
-
-Interactive documentation is available at **`/docs`** (Swagger UI) and **`/redoc`** when the backend is running.
-
-### Example: full workflow
+## Quick start
 
 ```bash
-# 1. Assemble
-curl -X POST http://localhost:8000/api/assemble \
-  -H 'Content-Type: application/json' \
-  -d '{"code": "nop\nhalt", "isa": "risc3"}'
-
-# 2. Create simulation (paste binary from step 1)
-curl -X POST http://localhost:8000/api/simulations \
-  -H 'Content-Type: application/json' \
-  -d '{"isa":"risc3","memory_architecture":"neumann","binary":"..."}'
-
-# 3. Step
-curl -X POST http://localhost:8000/api/simulations/{id}/step
-
-# 4. Run
-curl -X POST http://localhost:8000/api/simulations/{id}/run \
-  -d '{"max_cycles":1000}'
-
-# 5. Reset
-curl -X POST http://localhost:8000/api/simulations/{id}/reset
-
-# 6. Clean up
-curl -X DELETE http://localhost:8000/api/simulations/{id}
-```
-
----
-
-## Local Development
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-
-### Backend
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the FastAPI server (with hot reload)
-uvicorn api.main:app --reload --port 8000
-```
-
-API docs: http://localhost:8000/docs
-
-### Frontend
-
-```bash
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m pytest -q
 cd frontend
-npm install
-npm run dev
+npm ci
+npm run build
 ```
 
-App: http://localhost:5173  
-The Vite dev server proxies all `/api` requests to the backend automatically.
+Run the API with `..\.venv\Scripts\python.exe -m uvicorn api.main:app --reload` from the repository root, then open the frontend with `npm run dev`. Model use is optional for the simulator; configure `GEMMA_BACKEND`, `GEMMA_FAST_MODEL`, and the local endpoint for Copilot.
 
-### Run Tests
+## Architecture and trust boundary
 
-```bash
-# All backend tests (46 tests)
-python -m pytest tests/ -v
+```mermaid
+flowchart LR
+  T[Task / confirmed user spec] --> G[Gemma 4]
+  G -->|untrusted assembly, tool args, explanation| A[Assembler]
+  A --> S[Strict simulator]
+  S --> C[Server-owned deterministic checker]
+  C --> V[Pass / fail]
+  G -.-> L[Logbook + telemetry]
+  X{TRUST BOUNDARY: model output is untrusted; simulator + checker decide} -.-> A
 ```
 
----
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/AUDIT.md](docs/AUDIT.md).
 
-## Project Structure
+## Measured results
 
-```
-ForgeASM-V1/
-├── api/
-│   ├── main.py                  # FastAPI app entry point
-│   ├── models.py                # Pydantic request/response models
-│   ├── simulation_manager.py    # Session store + transport-agnostic engine
-│   └── routes/
-│       └── simulation.py        # REST simulation endpoints
-│
-├── core/
-│   ├── assembler/               # Multi-pass assembler + parser
-│   ├── isa/                     # ISA definitions (JSON + Python)
-│   ├── memory/                  # Von Neumann / Harvard memory banks
-│   ├── io/                      # Memory-mapped and port-mapped I/O
-│   └── simulator/               # CPU fetch-decode-execute engine
-│
-├── frontend/
-│   └── src/
-│       ├── api.ts               # REST API client (no WebSocket)
-│       ├── App.tsx              # React IDE
-│       └── App.css              # LeetCode-inspired dark theme
-│
-├── tests/
-│   ├── test_assembler.py        # Assembler unit tests
-│   ├── test_isa.py              # ISA loader unit tests
-│   └── test_simulation_api.py   # REST API integration tests (40 tests)
-│
-└── modules/demos/               # Example .asm programs per ISA
-```
+Generated from `eval/results.json` by `python -m scripts.generate_judge_docs`.
 
----
+### Per ISA
 
-## Deployment
+| name | n | assemble_ok@1 | pass@1 | pass@repair | mean_repair_turns | tokens | latency_ms | tokens/sec | efficiency_ratio | bytes_off_device |
+|---|---|---|---|---|---|---|---|---|---|---|
+| cisc | 24 | 1 | 1 | 1 | 0 | 24 | 0.093 | 277777.2789 | 1.0 | 8581 |
+| risc1 | 28 | 1 | 1 | 1 | 0 | 24 | 0.0935 | 299227.2212 | 1.0 | 5982.4286 |
+| risc2 | 24 | 1 | 1 | 1 | 0 | 24 | 0.0941 | 289318.5804 | 1.0 | 6403 |
+| risc3 | 32 | 1 | 0.875 | 0.875 | 0.375 | 33 | 0.1141 | 304994.3231 | 1.0 | 9975.8125 |
 
-### Production build
+### Per model
 
-```bash
-# Build frontend static assets
-cd frontend && npm run build
+| name | n | assemble_ok@1 | pass@1 | pass@repair | mean_repair_turns | tokens | latency_ms | tokens/sec | efficiency_ratio | bytes_off_device |
+|---|---|---|---|---|---|---|---|---|---|---|
+| mock | 108 | 1 | 0.963 | 0.963 | 0.1111 | 26.6667 | 0.0996 | 293967.4181 | 1.0 | 7836.5741 |
 
-# Serve static assets via FastAPI (or any CDN/static host)
-# Backend: single Uvicorn process, no Redis or database required
-uvicorn api.main:app --host 0.0.0.0 --port 8000
-```
+### Ablations
 
-### Environment variables
+| name | n | assemble_ok@1 | pass@1 | pass@repair | mean_repair_turns | tokens | latency_ms | tokens/sec | efficiency_ratio | bytes_off_device |
+|---|---|---|---|---|---|---|---|---|---|---|
+| card-no-examples | 27 | 1 | 0.963 | 0.963 | 0.1481 | 27.5556 | 0.1183 | 250133.5778 | 1.0 | 10255.8519 |
+| full-card | 27 | 1 | 0.963 | 0.963 | 0.1481 | 27.5556 | 0.1187 | 251945.1791 | 1.0 | 10351.1481 |
+| no-card | 27 | 1 | 0.963 | 0.963 | 0.1481 | 27.5556 | 0.072 | 396570.8376 | 1.0 | 1850.4444 |
+| no-repair | 27 | 1 | 0.963 | 0.963 | 0 | 24 | 0.0895 | 277220.078 | 1.0 | 8888.8519 |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CORS_ORIGINS` | `*` | Comma-separated allowed origins (e.g. `https://yoursite.com`) |
-| `VITE_API_URL` | `""` (same origin) | Backend URL for frontend builds behind a CDN |
+The complete generated report is [eval/RESULTS.md](eval/RESULTS.md). The current artifact explicitly records when real model backends are unavailable; no unavailable backend is scored as zero.
 
-The application **does not require** Redis, a database, a message queue, or WebSocket support.  A single Python process is sufficient for V1.
+## Privacy
 
----
+Local mode sends model requests only to the configured localhost-compatible model endpoint and reports zero off-device bytes. Cloud mode is opt-in and visibly reports off-device telemetry. The simulator/checker remains local and server-owned.
 
-## Session Management Note
+## Limitations
 
-Simulation sessions are stored in the server process's heap memory.  This is intentional for V1 simplicity.  A single Uvicorn worker (`--workers 1`) is the correct deployment target.  For multi-instance horizontal scaling, replace the in-memory dict in `SimulationManager` with an external store (e.g. Redis).
+The committed evaluation artifact currently contains mock-model measurements and reference translation gates, not real Gemma measurements. A configured Gemma model is required before claiming real-model pass rates, image transcription accuracy, or live translation success. Runtime sessions are in memory, and the demo GIF/photo assets must be captured locally rather than invented.
 
----
+## License
 
-## Known Limitations
-
-- Sessions are lost on server restart (in-memory store).
-- The CPU simulator covers the primary instruction set; some edge-case opcodes fall through to no-ops rather than raising errors.
-- No authentication — the API is open.  Do not expose it directly to the public internet without a reverse proxy.
-
----
-
-## Future Improvements
-
-- Persist sessions across restarts (Redis or SQLite)
-- Pipeline simulation (fetch/decode/execute stages with hazard detection)
-- VCD waveform export for signal visualization
-- Syntax highlighting in the editor (CodeMirror or Monaco)
-- Breakpoint support in the debugger
+Apache-2.0. See [LICENSE](LICENSE).
