@@ -6,10 +6,14 @@ from .gateway import (
     GatewayConfigurationError,
     MockBackend,
 )
+from .agent import CopilotAgent
+from .spec import build_isa_card
 
 __all__ = [
     "ModelGateway",
     "ModelUnavailable",
     "GatewayConfigurationError",
     "MockBackend",
+    "CopilotAgent",
+    "build_isa_card",
 ]

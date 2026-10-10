@@ -10,3 +10,6 @@
 - Added the centralized `copilot.ModelGateway` with local/cloud routing,
   capability probes, text-protocol fallback, retry handling, telemetry, JSONL
   persistence, and deterministic mock backend tests.
+- Added the bounded assembly-writing Copilot agent with verified ISA cards,
+  strict assemble/run/inspect/submit tools, immutable task checking, YAML task
+  loading, episode JSON persistence, repair limits, and `python -m copilot.solve`.

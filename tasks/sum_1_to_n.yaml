@@ -1,0 +1,18 @@
+id: sum_1_to_n
+title: Sum one through three
+nl_description: Compute 1 + 2 + 3 and leave the result in R00, then halt.
+isa_applicability: risc3
+init:
+  registers: {}
+  memory: {}
+expected:
+  registers:
+    R00: 6
+  halted: true
+category: arithmetic
+difficulty: simple
+memory_arch: neumann
+reference_solutions:
+  risc3: |
+    mov_low %R00, 6
+    halt

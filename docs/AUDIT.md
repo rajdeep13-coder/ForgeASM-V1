@@ -280,3 +280,24 @@ records; each record is also appended to
 `COPILOT_TELEMETRY_PATH` (default `logs/copilot_telemetry.jsonl`). Local calls
 always report `bytes_off_device: 0`. The Copilot run route uses the optional
 `X-Session-ID` request header and records it with each JSONL telemetry entry.
+
+## Assembly-writing Copilot
+
+`copilot.spec.build_isa_card` reads the active JSON ISA definitions and only
+includes demo programs that pass both assembly and a strict in-process run.
+Cards report an approximate whitespace-token count and enforce a configurable
+budget. `copilot.agent.CopilotAgent` exposes only `get_isa_card`, `assemble`,
+`run`, `inspect`, and `submit`; arguments are checked before execution.
+
+Task files may be JSON under `eval/tasks/` for compatibility or YAML under
+`tasks/`. YAML fields are `id`, `title`, `nl_description`, `isa_applicability`,
+`init`, `expected`, `category`, `difficulty`, `memory_arch`, and optional
+`reference_solutions`. Reference solutions are loaded only for satisfiability
+checks and are never included in model messages. Checker comparisons use a
+deep-copied expected object, so tool arguments cannot modify task criteria.
+
+An episode allows at most four tool calls per model turn and four repair turns,
+and is bounded by a wall-clock timeout. Every model message, tool call, compact
+result, token count, latency, and final verdict is persisted as one JSON file
+under `logs/copilot_episodes`. The CLI is:
+`python -m copilot.solve --isa risc3 --task tasks/sum_1_to_n.yaml --model fast`.
