@@ -1,0 +1,70 @@
+{
+  "episode_id": "47ad74ce-8ff5-495c-a7c6-6da288f70a4c",
+  "task_id": "memory_11",
+  "isa": "risc3",
+  "messages": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. The checker is server-owned; never attempt to alter task expectations.\n"
+        },
+        {
+          "role": "user",
+          "content": "Read or write the requested byte and halt. The reference workload is intentionally bounded and checker-owned."
+        }
+      ],
+      "response": {
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "submit",
+            "arguments": {
+              "source": "halt\n"
+            }
+          }
+        ],
+        "usage": {
+          "in": 20,
+          "out": 4
+        },
+        "latency_ms": 0.13929978013038635,
+        "model_id": "mock-gemma",
+        "backend": "MOCK",
+        "bytes_off_device": 1522
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "submit",
+      "arguments": {
+        "source": "halt\n"
+      }
+    }
+  ],
+  "results": [
+    {
+      "submitted": true,
+      "source": "halt\n"
+    },
+    {
+      "result_id": "d95446a7-beb3-4724-9307-003f30b14bbb",
+      "assembled": true,
+      "errors": [],
+      "halted": true,
+      "timed_out": false,
+      "cycles": 1,
+      "checker": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ],
+  "verdict": "passed",
+  "tokens": {
+    "in": 20,
+    "out": 4
+  },
+  "latency_ms": 0.13929978013038635
+}

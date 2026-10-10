@@ -1,0 +1,70 @@
+{
+  "episode_id": "832da38a-91b2-445f-a366-936aaa6851d7",
+  "task_id": "array_06",
+  "isa": "risc2",
+  "messages": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. The checker is server-owned; never attempt to alter task expectations.\nISA risc2; word size is defined by the active assembler.\nregisters: FR(000,special); SP(001,special); IP(010,special); IR(011,special); ACC(100,general)\nflags: FR bits C=12, Z=13, O=14, N/S=15 when FR exists.\ninstructions:\nhalt(-) [00000000] dest=halt; verified CPU result model\nload(-) [00000001] dest=acc, memir; verified CPU result model\nloadf(-) [00000010] dest=acc, fr; verified CPU result model\nloadi(-) [00000011] dest=acc, ir; verified CPU result model\nstore(-) [00000100] dest=memir, acc; verified CPU result model\nstore(imm) [10000000] dest=memir, imm; verified CPU result model\nstoref(-) [00000101] dest=fr, acc; verified CPU result model\nstorei(-) [00000110] dest=ir, acc; verified CPU result model\nmov(imm) [10000001] dest=acc, imm; verified CPU result model\npush(-) [00000111] dest=stackpush, acc; verified CPU result model\npushf(-) [00001000] dest=stackpush, fr; verified CPU result model\npushi(-) [00001001] dest=stackpush, ir; verified CPU result model\npop(-) [00001010] dest=stackpop, acc; verified CPU result model\npopf(-) [00001011] dest=stackpop, fr; verified CPU result model\npopi(-) [00001100] dest=stackpop, ir; verified CPU result model\nadd(-) [00001101] dest=acc, memir; verified CPU result model\nsub(-) [00001110] dest=acc, memir; verified CPU result model\ninc(-) [00001111] dest=acc, one; verified CPU result model\ndec(-) [00010000] dest=acc, one; verified CPU result model\nmul(-) [00010001] dest=acc, memir; verified CPU result model\ndiv(-) [00010010] dest=acc, memir; verified CPU result model\nand(-) [00010011] dest=acc, memir; verified CPU result model\nor(-) [00010100] dest=acc, memir; verified CPU result model\nxor(-) [00010101] dest=acc, memir; verified CPU result model\nnot(-) [00010110] dest=acc, acc; verified CPU result model\nlsh(imm) [10000010] dest=acc, imm; verified CPU result model\nrsh(imm) [10000011] dest=acc, imm; verified CPU result model\ncall(-) [00010111] dest=call, acc; verified CPU result model\ncall(imm) [10000100] dest=call, imm; verified CPU result model\nret(-) [00011000] dest=ret; verified CPU result model\ncmp(-) [00011001] dest=cmp, acc, memir; verified CPU result model\ncmp(imm) [10000101] dest=cmp, acc, imm; verified CPU result model\ntest(-) [00011010] dest=cmp, acc, memir; verified CPU result model\ntest(imm) [10000110] dest=cmp, acc, imm; verified CPU result model\njmp(imm) [10000111] dest=jmp, imm; verified CPU result model\njmp(-) [00011011] dest=jmp, acc; verified CPU result model\nje(imm) [10001000] dest=jmp, imm; verified CPU result model\nje(-) [00011100] dest=jmp, acc; verified CPU result model\njne(imm) [10001001] dest=jmp, imm; verified CPU result model\njne(-) [00011101] dest=jmp, acc; verified CPU result model\njg(imm) [10001010] dest=jmp, imm; verified CPU result model\njg(-) [00011110] dest=jmp, acc; verified CPU result model\njge(imm) [10001011] dest=jmp, imm; verified CPU result model\njge(-) [00011111] dest=jmp, acc; verified CPU result model\njl(imm) [10001100] dest=jmp, imm; verified CPU result model\njl(-) [00100000] dest=jmp, acc; verified CPU result model\njle(imm) [10001101] dest=jmp, imm; verified CPU result model\njle(-) [00100001] dest=jmp, acc; verified CPU result model\nin(imm) [10001110] dest=in, imm; verified CPU result model\nout(imm) [10001111] dest=out, imm, acc; verified CPU result model\nnop(-) [00100010] dest=; verified CPU result model\ndirectives: .label (jump label); .label db|byte|dw|word value.\nlabels: a leading dot defines a label; jumps and selected immediates use .label.\nmemory: byte-addressed data; Harvard separates instruction and data memory; Neumann shares them.\nhalting: halt sets CPU halted; a bounded run is timed_out when the cap is reached first.\nexample alphabet_printout.asm:\n# Alphabet PrintOut | Accumulator-RISC example Assembly program\n\n# Following instructions printout the alphabet\n# Directive .start contains starting point (ASCII-code of A)\n# Directive .end contains ending point (ASCII-code of Z)\n\n.start db 65\n.end db 91\n\n# Load the starting ASCII value into ACC\nmov .start\n\n.loop\n# Check if we have already finished printing the alphabet\ncmp .end\n\n# Jump to the end of the program if we are finished with printing\nje .finish\n\n# Output ACC value to the device at port 1\nout $1\n\n# Increment the value of the ASCII code by 1\ninc\n\n# Jump back to the start of the loop\njmp .loop\n\n.finish\n# Finish program\nnop\nexample bubble_sort.asm:\n# Bubble Sort | Accumulator-RISC example Assembly program\n\n# These instructions sort a manually 'created' list\n# Directive .start contains the starting index of the list (0 in that example)\n# Directive .end contains the ending index of the list (6 in that example)\n# Values must be manually written into the data memory after the program was assembled\n# Example list: 00 30 00 20 00 10 00 00\n# Result will be: 00 00 00 10 00 20 00 30\n\n# Directives:\n.start db 0\n.end db 6\n\n.listloop\n# Push 'zero' change indicator\nmov $0\npush\n\n# Load starting point\nmov .start\nstorei\n\n.loop\n# Jump to the indicator check, if the list was finished\nloadi\ncmp .end\nje .checkcondition\n\n# Compare two values\nload\npush\n\n# There is a step (2 bytes)\nloadi\ninc\ninc\nstorei\n\npop\ncmp\n\n# If the first value is less/equal than second, continue going through the list\njle .loop\n\n# If it is bigger, swap values\npush\nload\npush\n\nloadi\ndec\ndec\nstorei\n\npop\nstore\n\nloadi\ninc\ninc\nstorei\n\npop\nstore\n\n# Push change indicator\npop\nmov $1\npush\n\n# Continue going through the list\njmp .loop\n\n.checkcondition\n# Check if there were any changes, finish if not\nmov $0\nstorei\npop\ncmp $0\njne .listloop\n\n# Finish the program\nnop\nexample helloworld.asm:\n# Hello World PrintOut | Accumulator-RISC example Assembly program\n\n# Push the ASCII encodings onto the stack, and load the first letter into ACC register\n# Directive .end contains last element 'Hello World!'\n\n.end db 31\n\nmov .end\npush\nmov $33\npush\nmov $100\npush\nmov $108\npush\nmov $114\npush\nmov $111\npush\nmov $119\npush\nmov $32\npush\nmov $111\npush\nmov $108\npush\nmov $108\npush\nmov $101\npush\nmov $72\n\n.loop\n# Check if we have already finished printing the alphabet\ncmp .end\n\n# Jump to the end of the program if we are finished with printing\nje .finish\n\n# Output a new letter to the device at port 1\nout $1\n\n# Pop the new letter into ACC register\npop\n\n# Jump back to the start of the loop\njmp .loop\n\n.finish\n# Finish the program\nnop"
+        },
+        {
+          "role": "user",
+          "content": "Process the requested array operation and halt. The reference workload is intentionally bounded and checker-owned."
+        }
+      ],
+      "response": {
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "submit",
+            "arguments": {
+              "source": "halt\n"
+            }
+          }
+        ],
+        "usage": {
+          "in": 20,
+          "out": 4
+        },
+        "latency_ms": 0.1500002108514309,
+        "model_id": "mock-gemma",
+        "backend": "MOCK",
+        "bytes_off_device": 8046
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "submit",
+      "arguments": {
+        "source": "halt\n"
+      }
+    }
+  ],
+  "results": [
+    {
+      "submitted": true,
+      "source": "halt\n"
+    },
+    {
+      "result_id": "486c90a9-6fb3-48e0-b019-4a4230cf8d3a",
+      "assembled": true,
+      "errors": [],
+      "halted": true,
+      "timed_out": false,
+      "cycles": 1,
+      "checker": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ],
+  "verdict": "passed",
+  "tokens": {
+    "in": 20,
+    "out": 4
+  },
+  "latency_ms": 0.1500002108514309
+}

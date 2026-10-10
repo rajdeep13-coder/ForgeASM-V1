@@ -1,0 +1,70 @@
+{
+  "episode_id": "aeb8f02e-eba7-4d77-b4c0-05d6cde48c80",
+  "task_id": "array_22",
+  "isa": "risc2",
+  "messages": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. The checker is server-owned; never attempt to alter task expectations.\n"
+        },
+        {
+          "role": "user",
+          "content": "Hard: Process the requested array operation and halt. The reference workload is intentionally bounded and checker-owned."
+        }
+      ],
+      "response": {
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "submit",
+            "arguments": {
+              "source": "halt\n"
+            }
+          }
+        ],
+        "usage": {
+          "in": 20,
+          "out": 4
+        },
+        "latency_ms": 0.15300000086426735,
+        "model_id": "mock-gemma",
+        "backend": "MOCK",
+        "bytes_off_device": 1533
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "submit",
+      "arguments": {
+        "source": "halt\n"
+      }
+    }
+  ],
+  "results": [
+    {
+      "submitted": true,
+      "source": "halt\n"
+    },
+    {
+      "result_id": "a64c8b6b-1244-4c54-8148-2ffee872e56e",
+      "assembled": true,
+      "errors": [],
+      "halted": true,
+      "timed_out": false,
+      "cycles": 1,
+      "checker": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ],
+  "verdict": "passed",
+  "tokens": {
+    "in": 20,
+    "out": 4
+  },
+  "latency_ms": 0.15300000086426735
+}

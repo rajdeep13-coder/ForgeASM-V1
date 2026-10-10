@@ -1,0 +1,70 @@
+{
+  "episode_id": "50c555ba-90c5-4dc5-841d-48a13025a67c",
+  "task_id": "stack_16",
+  "isa": "cisc",
+  "messages": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. The checker is server-owned; never attempt to alter task expectations.\n"
+        },
+        {
+          "role": "user",
+          "content": "Use the architecture's stack-style computation and halt. The reference workload is intentionally bounded and checker-owned."
+        }
+      ],
+      "response": {
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "submit",
+            "arguments": {
+              "source": "halt\n"
+            }
+          }
+        ],
+        "usage": {
+          "in": 20,
+          "out": 4
+        },
+        "latency_ms": 0.11189980432391167,
+        "model_id": "mock-gemma",
+        "backend": "MOCK",
+        "bytes_off_device": 1536
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "submit",
+      "arguments": {
+        "source": "halt\n"
+      }
+    }
+  ],
+  "results": [
+    {
+      "submitted": true,
+      "source": "halt\n"
+    },
+    {
+      "result_id": "e0c8c21d-e081-4158-baec-7788a0c20b22",
+      "assembled": true,
+      "errors": [],
+      "halted": true,
+      "timed_out": false,
+      "cycles": 1,
+      "checker": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ],
+  "verdict": "passed",
+  "tokens": {
+    "in": 20,
+    "out": 4
+  },
+  "latency_ms": 0.11189980432391167
+}

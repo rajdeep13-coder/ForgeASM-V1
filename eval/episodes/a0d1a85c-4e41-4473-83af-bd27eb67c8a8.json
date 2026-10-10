@@ -1,0 +1,70 @@
+{
+  "episode_id": "a0d1a85c-4e41-4473-83af-bd27eb67c8a8",
+  "task_id": "arithmetic_17",
+  "isa": "risc1",
+  "messages": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. The checker is server-owned; never attempt to alter task expectations.\n"
+        },
+        {
+          "role": "user",
+          "content": "Compute the requested arithmetic result and halt. The reference workload is intentionally bounded and checker-owned."
+        }
+      ],
+      "response": {
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "submit",
+            "arguments": {
+              "source": "halt\n"
+            }
+          }
+        ],
+        "usage": {
+          "in": 20,
+          "out": 4
+        },
+        "latency_ms": 0.08390005677938461,
+        "model_id": "mock-gemma",
+        "backend": "MOCK",
+        "bytes_off_device": 1529
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "submit",
+      "arguments": {
+        "source": "halt\n"
+      }
+    }
+  ],
+  "results": [
+    {
+      "submitted": true,
+      "source": "halt\n"
+    },
+    {
+      "result_id": "9d66bcc1-3117-413a-b1bd-b73461526245",
+      "assembled": true,
+      "errors": [],
+      "halted": true,
+      "timed_out": false,
+      "cycles": 1,
+      "checker": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ],
+  "verdict": "passed",
+  "tokens": {
+    "in": 20,
+    "out": 4
+  },
+  "latency_ms": 0.08390005677938461
+}

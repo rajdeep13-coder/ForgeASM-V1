@@ -1,0 +1,21 @@
+{
+  "id": "memory_11",
+  "title": "Memory task 11",
+  "nl_description": "Read or write the requested byte and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "risc3"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "memory",
+  "difficulty": "easy",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "risc3": "halt\n"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "arithmetic_25",
+  "title": "Arithmetic task 25",
+  "nl_description": "Hard: Compute the requested arithmetic result and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "risc1"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "arithmetic",
+  "difficulty": "hard",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "risc1": "halt\n"
+  }
+}

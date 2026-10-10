@@ -118,16 +118,27 @@ class CopilotAgent:
             return {"submitted": True, "source": args["source"]}
         raise ValueError(f"unsupported tool: {name}")
 
-    def solve(self, task: TaskSpec, max_repairs: int = 4) -> Dict[str, Any]:
+    def solve(self, task: TaskSpec, max_repairs: int = 4,
+              card_variant: str = "full") -> Dict[str, Any]:
         started = time.monotonic()
         episode: Dict[str, Any] = {"episode_id": str(uuid.uuid4()), "task_id": task.task_id,
                                    "isa": task.isa, "messages": [], "tool_calls": [],
                                    "results": [], "verdict": "failed", "tokens": {"in": 0, "out": 0},
                                    "latency_ms": 0.0}
         card = build_isa_card(task.isa, self.card_budget)
+        card_text = card["text"]
+        if card_variant == "no-card":
+            card_text = ""
+        elif card_variant == "card-no-examples":
+            card_text = "\n".join(
+                line for line in card_text.splitlines()
+                if not line.startswith("example ")
+            )
+        elif card_variant != "full":
+            raise ValueError("card_variant must be no-card, card-no-examples, or full")
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": "Write assembly only. Use tools to assemble, run, inspect, and submit. "
-             "The checker is server-owned; never attempt to alter task expectations.\n" + card["text"]},
+             "The checker is server-owned; never attempt to alter task expectations.\n" + card_text},
             {"role": "user", "content": task.nl_description},
         ]
         repairs = 0

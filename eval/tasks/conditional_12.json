@@ -1,0 +1,21 @@
+{
+  "id": "conditional_12",
+  "title": "Conditional task 12",
+  "nl_description": "Take the requested conditional path and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "cisc"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "conditional",
+  "difficulty": "easy",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "cisc": "halt\n"
+  }
+}

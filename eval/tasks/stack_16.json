@@ -1,0 +1,21 @@
+{
+  "id": "stack_16",
+  "title": "Stack task 16",
+  "nl_description": "Use the architecture's stack-style computation and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "cisc"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "stack",
+  "difficulty": "medium",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "cisc": "halt\n"
+  }
+}

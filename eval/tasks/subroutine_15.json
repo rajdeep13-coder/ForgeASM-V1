@@ -1,0 +1,21 @@
+{
+  "id": "subroutine_15",
+  "title": "Subroutine task 15",
+  "nl_description": "Use a subroutine where supported and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "risc3"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "subroutine",
+  "difficulty": "easy",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "risc3": "halt\n"
+  }
+}

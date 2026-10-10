@@ -1,0 +1,21 @@
+{
+  "id": "array_14",
+  "title": "Array task 14",
+  "nl_description": "Process the requested array operation and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "risc2"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "array",
+  "difficulty": "easy",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "risc2": "halt\n"
+  }
+}

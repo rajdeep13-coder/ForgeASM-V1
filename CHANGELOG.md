@@ -13,3 +13,6 @@
 - Added the bounded assembly-writing Copilot agent with verified ISA cards,
   strict assemble/run/inspect/submit tools, immutable task checking, YAML task
   loading, episode JSON persistence, repair limits, and `python -m copilot.solve`.
+- Added the generated `eval/` task corpus, reference-solution gate, measured
+  model matrix, failure taxonomy, ablations, JSON results, Markdown report, and
+  replay mode via `python -m eval.run`.

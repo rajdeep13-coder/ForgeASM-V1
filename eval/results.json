@@ -1,0 +1,940 @@
+{
+  "schema_version": 1,
+  "generated_at": 1791639770.6710699,
+  "references": [
+    {
+      "task": "arithmetic_01",
+      "isa": "risc1"
+    },
+    {
+      "task": "arithmetic_09",
+      "isa": "risc1"
+    },
+    {
+      "task": "arithmetic_17",
+      "isa": "risc1"
+    },
+    {
+      "task": "arithmetic_25",
+      "isa": "risc1"
+    },
+    {
+      "task": "array_06",
+      "isa": "risc2"
+    },
+    {
+      "task": "array_14",
+      "isa": "risc2"
+    },
+    {
+      "task": "array_22",
+      "isa": "risc2"
+    },
+    {
+      "task": "bit_05",
+      "isa": "risc1"
+    },
+    {
+      "task": "bit_13",
+      "isa": "risc1"
+    },
+    {
+      "task": "bit_21",
+      "isa": "risc1"
+    },
+    {
+      "task": "conditional_04",
+      "isa": "cisc"
+    },
+    {
+      "task": "conditional_12",
+      "isa": "cisc"
+    },
+    {
+      "task": "conditional_20",
+      "isa": "cisc"
+    },
+    {
+      "task": "loop_02",
+      "isa": "risc2"
+    },
+    {
+      "task": "loop_10",
+      "isa": "risc2"
+    },
+    {
+      "task": "loop_18",
+      "isa": "risc2"
+    },
+    {
+      "task": "memory_03",
+      "isa": "risc3"
+    },
+    {
+      "task": "memory_11",
+      "isa": "risc3"
+    },
+    {
+      "task": "memory_19",
+      "isa": "risc3"
+    },
+    {
+      "task": "stack_08",
+      "isa": "cisc"
+    },
+    {
+      "task": "stack_16",
+      "isa": "cisc"
+    },
+    {
+      "task": "stack_24",
+      "isa": "cisc"
+    },
+    {
+      "task": "subroutine_07",
+      "isa": "risc3"
+    },
+    {
+      "task": "subroutine_15",
+      "isa": "risc3"
+    },
+    {
+      "task": "subroutine_23",
+      "isa": "risc3"
+    }
+  ],
+  "cells": [
+    {
+      "task": "arithmetic_01",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_01",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_01",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_01",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_09",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_09",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_09",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_09",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_17",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_17",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_17",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_17",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_25",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_25",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_25",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "arithmetic_25",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_06",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_06",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_06",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_06",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_14",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_14",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_14",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_14",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_22",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_22",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_22",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "array_22",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_05",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_05",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_05",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_05",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_13",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_13",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_13",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_13",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_21",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_21",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_21",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "bit_21",
+      "isa": "risc1",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_04",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_04",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_04",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_04",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_12",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_12",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_12",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_12",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_20",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_20",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_20",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "conditional_20",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_02",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_02",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_02",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_02",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_10",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_10",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_10",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_10",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_18",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_18",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_18",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "loop_18",
+      "isa": "risc2",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_03",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_03",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_03",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_03",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_11",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_11",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_11",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_11",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_19",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_19",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_19",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "memory_19",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "risc3_halt",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "risc3_halt",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "risc3_halt",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "risc3_halt",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_08",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_08",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_08",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_08",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_16",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_16",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_16",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_16",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_24",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_24",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_24",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "stack_24",
+      "isa": "cisc",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_07",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_07",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_07",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_07",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_15",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_15",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_15",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_15",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_23",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_23",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "card-no-examples",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_23",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "full-card",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    },
+    {
+      "task": "subroutine_23",
+      "isa": "risc3",
+      "model": "fast-local",
+      "ablation": "no-repair",
+      "status": "skipped",
+      "skip_reason": "GEMMA_FAST_MODEL is missing. Set it to an installed local Gemma tag or configure GEMMA_BACKEND=CLOUD with GEMMA_API_KEY."
+    }
+  ]
+}

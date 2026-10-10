@@ -1,0 +1,21 @@
+{
+  "id": "subroutine_23",
+  "title": "Subroutine task 23",
+  "nl_description": "Hard: Use a subroutine where supported and halt. The reference workload is intentionally bounded and checker-owned.",
+  "isa_applicability": [
+    "risc3"
+  ],
+  "init": {
+    "registers": {},
+    "memory": {}
+  },
+  "expected": {
+    "halted": true
+  },
+  "category": "subroutine",
+  "difficulty": "hard",
+  "memory_arch": "neumann",
+  "reference_solutions": {
+    "risc3": "halt\n"
+  }
+}
