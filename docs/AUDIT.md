@@ -260,3 +260,23 @@ Legacy root/module/website files include scripts with import-time execution,
 Windows-incompatible `curses`, or assumptions about an already-running HTTP
 server, so they were not moved automatically. GitHub Actions runs the
 maintained suite on pushes and pull requests.
+
+## ModelGateway boundary
+
+All model traffic is centralized in `copilot.ModelGateway`. Its
+`generate(messages, images=None, tools=None, json_schema=None, tier="fast")`
+method returns text, normalized tool calls, token usage, latency, model/backend
+identity, and `bytes_off_device`. `GEMMA_BACKEND` selects `LOCAL` (the default,
+OpenAI-compatible endpoint) or optional `CLOUD`; `GEMMA_FAST_MODEL` is required
+for the selected backend and `GEMMA_HEAVY_MODEL` is used for `tier="heavy"`.
+
+At FastAPI startup the gateway lists installed models and runs tiny text,
+image, tool, and JSON-schema probes. Probe results are available from
+`GET /api/copilot/capabilities`. If native tool calling is unavailable, the
+gateway requests and validates the text protocol
+`{"tool": "...", "args": {...}}` against the same tool schema. Calls are
+retried once with backoff. `GET /api/copilot/telemetry` exposes in-memory
+records; each record is also appended to
+`COPILOT_TELEMETRY_PATH` (default `logs/copilot_telemetry.jsonl`). Local calls
+always report `bytes_off_device: 0`. The Copilot run route uses the optional
+`X-Session-ID` request header and records it with each JSONL telemetry entry.

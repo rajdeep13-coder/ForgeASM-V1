@@ -17,6 +17,7 @@ import FastAPI, Pydantic, or anything from the api/ layer.
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, status
@@ -26,7 +27,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.models import AssembleRequest, AssembleResponse
 from api.routes.simulation import router as simulation_router
-from api.routes.copilot import router as copilot_router
+from api.routes.copilot import initialize_gateway, router as copilot_router
 from core.isa.isa_def import ISA
 from core.isa.exceptions import InvalidISAError
 from core.assembler.assembler import Assembler
@@ -34,6 +35,12 @@ from core.assembler.exceptions import AssemblerError
 
 
 # ─── Application ──────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    initialize_gateway()
+    yield
+
 
 app = FastAPI(
     title="ForgeASM — Hardware Simulator API",
@@ -45,6 +52,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 

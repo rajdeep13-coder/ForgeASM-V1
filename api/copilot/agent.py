@@ -10,6 +10,7 @@ from api.copilot.provider import (
     ProviderConfigurationError,
     ToolCall,
 )
+from copilot.gateway import ModelGateway
 from api.copilot.tasks import TaskSpec, check_state
 from api.simulation_manager import simulation_manager
 from core.assembler.assembler import Assembler
@@ -91,7 +92,7 @@ def run_agent(
 ) -> Dict[str, Any]:
     if not 1 <= max_iterations <= 8:
         raise ValueError("max_iterations must be from 1 to 8")
-    model = provider or OpenAICompatibleProvider()
+    model = provider or OpenAICompatibleProvider(ModelGateway())
     context = _isa_context(task.isa)
     messages: List[Dict[str, Any]] = [
         {
@@ -114,7 +115,14 @@ def run_agent(
     ]
     attempts: List[Dict[str, Any]] = []
     for iteration in range(max_iterations):
-        response: ModelResponse = model.complete(messages, [TOOL_DEFINITION])
+        if hasattr(model, "generate"):
+            generated = model.generate(messages, tools=[TOOL_DEFINITION])
+            response = ModelResponse(
+                generated["text"],
+                [ToolCall(call["name"], call["arguments"]) for call in generated["tool_calls"]],
+            )
+        else:
+            response = model.complete(messages, [TOOL_DEFINITION])
         if not response.tool_calls:
             return {
                 "status": "explanation",

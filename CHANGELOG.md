@@ -7,3 +7,6 @@
   benchmark task seed.
 - Added structured assembler diagnostics, opt-in strict opcode execution,
   in-process `run_program`, the ground-truth audit, and CI test workflow.
+- Added the centralized `copilot.ModelGateway` with local/cloud routing,
+  capability probes, text-protocol fallback, retry handling, telemetry, JSONL
+  persistence, and deterministic mock backend tests.
