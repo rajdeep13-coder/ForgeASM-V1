@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from contextlib import suppress
+import json
+from pathlib import Path
 
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
@@ -67,6 +69,19 @@ async def copilot_telemetry() -> JSONResponse:
         return JSONResponse(content={"records": gateway().telemetry()})
     except ModelUnavailable as exc:
         return JSONResponse(content={"records": [], "error": str(exc)})
+
+
+@router.get("/episodes", summary="Return cached Copilot episodes for the logbook")
+async def copilot_episodes() -> JSONResponse:
+    episode_dir = Path(__file__).resolve().parents[2] / "logs" / "copilot_episodes"
+    episodes = []
+    if episode_dir.is_dir():
+        for path in sorted(episode_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+            try:
+                episodes.append(json.loads(path.read_text(encoding="utf-8")))
+            except (OSError, json.JSONDecodeError):
+                continue
+    return JSONResponse(content={"episodes": episodes[:100]})
 
 
 @router.post(

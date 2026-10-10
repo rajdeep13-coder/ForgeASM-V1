@@ -4,7 +4,9 @@ import {
   assembleCode, createSimulation, stepSimulation,
   runSimulation, resetSimulation, deleteSimulation,
   getExamples, APIError,
+  getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, runCopilot,
   type ExamplesByISA, type SimState,
+  type CopilotCapabilities, type CopilotTelemetry, type CopilotEpisode,
 } from './api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -276,7 +278,7 @@ function MemoryPanel({ memory, pc, memAddrStr, onAddrChange }: {
 }
 
 /** Machine code view with current-PC highlight */
-function BinaryPanel({ binary, pc, isaName }: { binary: string | null; pc: number; isaName: string }) {
+function BinaryPanel({ binary, pc }: { binary: string | null; pc: number }) {
   const pcRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     pcRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -322,6 +324,161 @@ function OutputPanel({ output }: { output: string }) {
   );
 }
 
+function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: string) => void }) {
+  const [task, setTask] = useState('');
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [capabilities, setCapabilities] = useState<CopilotCapabilities | null>(null);
+  const [telemetry, setTelemetry] = useState<CopilotTelemetry[]>([]);
+  const [episodes, setEpisodes] = useState<CopilotEpisode[]>([]);
+  const [offline, setOffline] = useState(() => localStorage.getItem('forgeasm-offline') === 'true');
+  const [tab, setTab] = useState<'copilot' | 'logbook' | 'compare'>('copilot');
+
+  const refresh = useCallback(async () => {
+    try {
+      const [nextCapabilities, nextTelemetry, nextEpisodes] = await Promise.all([
+        getCopilotCapabilities(), getCopilotTelemetry(), getCopilotEpisodes(),
+      ]);
+      setCapabilities(nextCapabilities);
+      setTelemetry(nextTelemetry.records);
+      setEpisodes(nextEpisodes.episodes);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const timer = window.setInterval(refresh, 3000);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  const taskId = task.trim().toLowerCase().includes('sum') && task.includes('10')
+    ? 'sum_1_to_10_risc3' : 'risc3_halt';
+  const final = result?.final as Record<string, unknown> | undefined;
+  const attempts = (result?.attempts as Array<Record<string, unknown>> | undefined) ?? [];
+  const source = typeof final?.assembly === 'string' ? final.assembly : null;
+  const actualState = final?.state;
+
+  const generate = async () => {
+    if (!task.trim() || running) return;
+    if (offline && capabilities?.backend === 'CLOUD') {
+      setError('Offline mode is enabled; cloud backends are disabled.');
+      return;
+    }
+    setRunning(true); setError(null); setResult(null);
+    try {
+      const response = await runCopilot(taskId);
+      setResult(response as unknown as Record<string, unknown>);
+      await refresh();
+    } catch (caught) {
+      const message = caught instanceof APIError
+        ? `${caught.message}${caught.code ? ` (${caught.code})` : ''}`
+        : caught instanceof Error ? caught.message : String(caught);
+      setError(message.includes('timeout') ? 'Model request timed out. Try again.' : message);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <aside className="copilot-panel" aria-label="Copilot">
+      <div className="copilot-header">
+        <div>
+          <span className="copilot-kicker">GEMMA COPILOT</span>
+          <h2>Copilot</h2>
+        </div>
+        <span className={`copilot-badge ${capabilities?.available ? 'online' : 'offline'}`}>
+          {capabilities?.available ? 'ONLINE' : 'UNAVAILABLE'}
+        </span>
+      </div>
+      <div className="copilot-meta">
+        <span>{isa.toUpperCase()}</span>
+        <span>{capabilities?.backend ?? '—'} / {capabilities?.model_id ?? 'no model'}</span>
+        <label className="offline-toggle">
+          <input type="checkbox" checked={offline} onChange={e => {
+            setOffline(e.target.checked);
+            localStorage.setItem('forgeasm-offline', String(e.target.checked));
+          }} />
+          Offline mode
+        </label>
+      </div>
+      <div className="copilot-tabs" role="tablist">
+        {(['copilot', 'logbook', 'compare'] as const).map(item => (
+          <button key={item} role="tab" aria-selected={tab === item}
+            className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>
+            {item === 'copilot' ? 'Solve' : item === 'logbook' ? 'Logbook' : 'Compare'}
+          </button>
+        ))}
+      </div>
+      {tab === 'copilot' && (
+        <div className="copilot-body">
+          <label htmlFor="copilot-task">Describe the task</label>
+          <textarea id="copilot-task" value={task} onChange={e => setTask(e.target.value)}
+            placeholder="e.g. sum numbers 1 to 10 into R3" rows={4} />
+          <button className="btn btn-assemble copilot-generate" onClick={generate}
+            disabled={running || !task.trim()}>
+            {running ? 'Generating and verifying…' : 'Generate and verify'}
+          </button>
+          {error && <div className="copilot-error" role="alert">{error}</div>}
+          {capabilities?.error && !error && (
+            <div className="copilot-error" role="alert">{capabilities.error}</div>
+          )}
+          {result && (
+            <div className="copilot-result">
+              <div className={`copilot-verdict ${result.status === 'passed' ? 'pass' : 'fail'}`}>
+                {result.status === 'passed' ? 'PASS' : 'FAIL'}
+              </div>
+              <div className="copilot-result-meta">
+                {attempts.length} repair attempt{attempts.length === 1 ? '' : 's'} ·
+                {String(result.iterations ?? '—')} turns
+              </div>
+              {source && <button className="btn btn-step" onClick={() => onInsert(source)}>Insert final assembly</button>}
+              {Boolean(actualState) && (
+                <pre className="copilot-state">Actual run: {JSON.stringify(actualState, null, 2)}</pre>
+              )}
+              {final && <pre className="copilot-code">{source ?? 'No final assembly returned.'}</pre>}
+            </div>
+          )}
+        </div>
+      )}
+      {tab === 'logbook' && (
+        <div className="copilot-scroll">
+          <div className="logbook-summary">Live REST polling · {telemetry.length} model calls</div>
+          {telemetry.slice().reverse().map(record => (
+            <div className="logbook-entry" key={record.id}>
+              <strong>{record.model_id || 'model'}</strong>
+              <span>{record.backend} · {Math.round(record.latency_ms)} ms · {record.tokens_in + record.tokens_out} tokens</span>
+              <span>Bytes off this device: {record.bytes_off_device}</span>
+            </div>
+          ))}
+          {episodes.slice(0, 10).map(episode => (
+            <div className="logbook-entry" key={episode.episode_id}>
+              <strong>{episode.task_id} · {episode.verdict}</strong>
+              <span>{episode.tool_calls?.length ?? 0} tool calls · {episode.tokens?.out ?? 0} output tokens</span>
+            </div>
+          ))}
+          {!telemetry.length && !episodes.length && <div className="rp-placeholder">No episodes recorded yet.</div>}
+        </div>
+      )}
+      {tab === 'compare' && (
+        <div className="copilot-scroll">
+          <div className="logbook-summary">Cached episodes only · offline comparison</div>
+          {episodes.length === 0 && <div className="rp-placeholder">Run a task to populate cached episodes.</div>}
+          {episodes.map(episode => (
+            <div className="compare-row" key={episode.episode_id}>
+              <span>{episode.task_id}</span><strong>{episode.isa}</strong>
+              <span className={episode.verdict === 'passed' ? 'text-pass' : 'text-fail'}>{episode.verdict}</span>
+              <span>{episode.tokens?.in ?? 0}/{episode.tokens?.out ?? 0} tok</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </aside>
+  );
+}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -343,6 +500,8 @@ export default function App() {
   const [trace, setTrace]       = useState<TraceEntry[]>([]);
   const [lastRun, setLastRun]   = useState<{ cycles: number; reason: string } | null>(null);
   const [assembleErr, setAsmErr]= useState<string | null>(null);
+  const [headerCapabilities, setHeaderCapabilities] = useState<CopilotCapabilities | null>(null);
+  const [headerBytes, setHeaderBytes] = useState(0);
 
   // Panel tabs
   const [rightTab, setRightTab] = useState<'state' | 'memory' | 'trace' | 'output'>('state');
@@ -374,12 +533,27 @@ export default function App() {
       lineNumRef.current.scrollTop = editorRef.current.scrollTop;
   }, []);
 
+
   // Load examples
   useEffect(() => {
     getExamples().then(setExamples).catch(() => log('Could not load examples.', 'error'));
     return () => {
       if (simIdRef.current) deleteSimulation(simIdRef.current).catch(() => {});
     };
+  }, [log]);
+
+  useEffect(() => {
+    getCopilotCapabilities().then(setHeaderCapabilities).catch(() => setHeaderCapabilities(null));
+    const refreshHeader = () => {
+      getCopilotCapabilities().then(setHeaderCapabilities).catch(() => {});
+      getCopilotTelemetry().then(value => setHeaderBytes(
+        value.records.reduce((total, record) => total + record.bytes_off_device, 0),
+      )).catch(() => {});
+    };
+    const timer = window.setInterval(() => {
+      refreshHeader();
+    }, 5000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const currentExamples = allExamples[isa] || [];
@@ -556,6 +730,15 @@ export default function App() {
 
         <div className="topbar-spacer" />
 
+        <div className="topbar-kpi" title="Copilot backend and active model">
+          <span className="topbar-kpi-label">Copilot</span>
+          <span className="topbar-kpi-val">{headerCapabilities?.backend ?? '—'} / {headerCapabilities?.model_id ?? '—'}</span>
+        </div>
+        <div className="topbar-kpi" title="Bytes sent away from this device">
+          <span className="topbar-kpi-label">Off-device</span>
+          <span className="topbar-kpi-val">{headerBytes} B</span>
+        </div>
+
         {/* Status pill */}
         <div className={`status-pill ${statusCls(appStatus)}`}>
           <span className="status-dot" />
@@ -620,6 +803,8 @@ export default function App() {
             <button className="btn btn-reset" onClick={handleReset} disabled={!canReset} title="Reset"><IcReset /> Reset</button>
           </div>
         </div>
+
+        <CopilotPanel isa={isa} onInsert={source => { setCode(source); log('Copilot assembly inserted into editor.', 'success'); }} />
 
         {/* ─── Right panel ─── */}
         <div className="right-panel">
@@ -702,7 +887,7 @@ export default function App() {
             </div>
           )}
           {bottomTab === 'binary' && (
-            <BinaryPanel binary={binary} pc={simState?.pc ?? 0} isaName={isa} />
+            <BinaryPanel binary={binary} pc={simState?.pc ?? 0} />
           )}
         </div>
       </div>

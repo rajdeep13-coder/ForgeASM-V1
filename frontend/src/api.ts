@@ -94,6 +94,56 @@ export interface RunResult {
   halt_reason: 'halted' | 'max_cycles' | 'already_halted';
 }
 
+export interface CopilotCapabilities {
+  available: boolean;
+  backend: string;
+  model_id: string | null;
+  installed_models: string[];
+  error?: string | null;
+  supports_tool_calling: boolean;
+  supports_images: boolean;
+  supports_json_schema: boolean;
+}
+
+export interface CopilotTelemetry {
+  id: string;
+  session_id: string;
+  backend: string;
+  model_id: string;
+  tokens_in: number;
+  tokens_out: number;
+  latency_ms: number;
+  tokens_per_sec: number;
+  bytes_off_device: number;
+}
+
+export interface CopilotRunResponse {
+  task_id: string;
+  status: string;
+  iterations?: number;
+  attempts?: Array<Record<string, unknown>>;
+  final?: Record<string, unknown> | null;
+  explanation?: string | null;
+  episode_id?: string;
+  verdict?: string;
+  tokens?: { in: number; out: number };
+  latency_ms?: number;
+  tool_calls?: Array<Record<string, unknown>>;
+  results?: Array<Record<string, unknown>>;
+}
+
+export interface CopilotEpisode {
+  episode_id: string;
+  task_id: string;
+  isa: string;
+  verdict: string;
+  tokens?: { in: number; out: number };
+  latency_ms?: number;
+  messages?: Array<Record<string, unknown>>;
+  tool_calls?: Array<Record<string, unknown>>;
+  results?: Array<Record<string, unknown>>;
+}
+
 // ─── Assembler ────────────────────────────────────────────────────────────────
 
 export async function assembleCode(code: string, isa: string): Promise<AssembleResult> {
@@ -128,4 +178,23 @@ export async function resetSimulation(simulationId: string): Promise<{ simulatio
 
 export async function deleteSimulation(simulationId: string): Promise<void> {
   return request('DELETE', `/api/simulations/${simulationId}`);
+}
+
+export async function getCopilotCapabilities(): Promise<CopilotCapabilities> {
+  return request<CopilotCapabilities>('GET', '/api/copilot/capabilities');
+}
+
+export async function getCopilotTelemetry(): Promise<{ records: CopilotTelemetry[]; error?: string }> {
+  return request('GET', '/api/copilot/telemetry');
+}
+
+export async function runCopilot(taskId: string, maxIterations = 4): Promise<CopilotRunResponse> {
+  return request<CopilotRunResponse>('POST', '/api/copilot/run', {
+    task_id: taskId,
+    max_iterations: maxIterations,
+  });
+}
+
+export async function getCopilotEpisodes(): Promise<{ episodes: CopilotEpisode[] }> {
+  return request('GET', '/api/copilot/episodes');
 }
