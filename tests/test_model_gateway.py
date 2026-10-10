@@ -76,3 +76,21 @@ def test_telemetry_math_and_jsonl_persistence(tmp_path):
     assert record["bytes_off_device"] > 0
     persisted = json.loads(telemetry_path.read_text(encoding="utf-8").splitlines()[-1])
     assert persisted["tokens_per_sec"] == record["tokens_per_sec"]
+
+
+def test_benchmark_export_contains_records_and_totals(tmp_path):
+    gateway = ModelGateway(
+        backend=MockBackend([
+            {"text": "OK"},
+            {"text": "ok", "usage": {"in": 4, "out": 6}},
+        ]),
+        telemetry_path=str(tmp_path / "telemetry.jsonl"),
+    )
+    gateway.startup_check()
+    gateway.set_session_id("session-a")
+    gateway.generate([{"role": "user", "content": "measure"}])
+    export = gateway.benchmark_export("session-a")
+    assert export["totals"]["calls"] == 1
+    assert export["totals"]["tokens_in"] == 4
+    assert export["totals"]["tokens_out"] == 6
+    assert export["records"][0]["session_id"] == "session-a"

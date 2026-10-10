@@ -509,5 +509,31 @@ class ModelGateway:
         with self._lock:
             return list(self._telemetry)
 
+    def benchmark_export(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        with self._lock:
+            records = [
+                dict(record) for record in self._telemetry
+                if session_id is None or record["session_id"] == session_id
+            ]
+        total_in = sum(item["tokens_in"] for item in records)
+        total_out = sum(item["tokens_out"] for item in records)
+        total_latency = sum(item["latency_ms"] for item in records)
+        return {
+            "schema_version": 1,
+            "session_id": session_id,
+            "records": records,
+            "totals": {
+                "calls": len(records),
+                "tokens_in": total_in,
+                "tokens_out": total_out,
+                "latency_ms": total_latency,
+                "tokens_per_sec": (
+                    (total_in + total_out) / (total_latency / 1000)
+                    if total_latency else 0
+                ),
+                "bytes_off_device": sum(item["bytes_off_device"] for item in records),
+            },
+        }
+
     def capabilities_snapshot(self) -> Dict[str, Any]:
         return self.capabilities.as_dict()

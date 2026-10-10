@@ -22,3 +22,6 @@
 - Added capability-gated multimodal photo transcription with client-side
   EXIF-stripping/downscaling, user confirmation, strict checker limits, and
   prompt-injection safeguards.
+- Added a trace-only explainer with verified cycle/value citations, a
+  localhost-only network-guard regression test, and benchmark telemetry export
+  with session totals in the Copilot performance panel.

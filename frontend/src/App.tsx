@@ -4,10 +4,12 @@ import {
   assembleCode, createSimulation, stepSimulation,
   runSimulation, resetSimulation, deleteSimulation,
   getExamples, APIError,
-  getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, runCopilot, translateCopilot,
+  getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, exportCopilotBenchmark,
+  runCopilot, translateCopilot,
   transcribeCopilotImage, solveCopilotConfirmedSpec,
   type ExamplesByISA, type SimState,
   type CopilotCapabilities, type CopilotTelemetry, type CopilotEpisode,
+  type CopilotBenchmark,
 } from './api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -342,6 +344,7 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
   const [photoBytes, setPhotoBytes] = useState(0);
   const [photoSpec, setPhotoSpec] = useState<Record<string, unknown> | null>(null);
   const [photoResult, setPhotoResult] = useState<Record<string, unknown> | null>(null);
+  const [benchmark, setBenchmark] = useState<CopilotBenchmark | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -445,6 +448,22 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setRunning(false);
+    }
+  };
+
+  const exportBenchmark = async () => {
+    try {
+      const data = await exportCopilotBenchmark();
+      setBenchmark(data);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'forgeasm-benchmark.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
     }
   };
 
@@ -594,11 +613,21 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
       )}
       {tab === 'logbook' && (
         <div className="copilot-scroll">
-          <div className="logbook-summary">Live REST polling · {telemetry.length} model calls</div>
+          <div className="logbook-summary">
+            Live REST polling · {telemetry.length} model calls
+            <button className="btn btn-step" onClick={exportBenchmark}>Export benchmark JSON</button>
+          </div>
+          {benchmark ? (
+            <div className="logbook-summary">Session totals: {String(JSON.stringify(benchmark.totals))}</div>
+          ) : null}
+          <div className="logbook-entry performance-header">
+            <strong>Model / backend</strong><span>Tokens in / out</span><span>Latency · tokens/sec</span>
+          </div>
           {telemetry.slice().reverse().map(record => (
             <div className="logbook-entry" key={record.id}>
               <strong>{record.model_id || 'model'}</strong>
-              <span>{record.backend} · {Math.round(record.latency_ms)} ms · {record.tokens_in + record.tokens_out} tokens</span>
+              <span>{record.backend} · {record.tokens_in} / {record.tokens_out}</span>
+              <span>{Math.round(record.latency_ms)} ms · {record.tokens_per_sec.toFixed(1)} tok/s</span>
               <span>Bytes off this device: {record.bytes_off_device}</span>
             </div>
           ))}

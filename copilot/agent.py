@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from copilot.gateway import ModelGateway
+from copilot.explainer import explain_trace
 from copilot.spec import build_isa_card
 from copilot.tasks import TaskSpec, check_result
 from core.assembler.assembler import Assembler
@@ -32,6 +33,8 @@ TOOLS = [
            ["isa", "memory_arch", "source", "init", "max_cycles"]),
     _schema("inspect", {"result_id": {"type": "string"},
                         "what": {"type": "string"}}, ["result_id", "what"]),
+    _schema("explain_trace", {"result_id": {"type": "string"},
+                                           "question": {"type": "string"}}, ["result_id", "question"]),
     _schema("submit", {"source": {"type": "string"}}, ["source"]),
 ]
 
@@ -43,6 +46,7 @@ def _validate(name: str, args: Any) -> Dict[str, Any]:
         "get_isa_card": {"isa"}, "assemble": {"isa", "source"},
         "run": {"isa", "memory_arch", "source", "init", "max_cycles"},
         "inspect": {"result_id", "what"}, "submit": {"source"},
+        "explain_trace": {"result_id", "question"},
     }[name]
     if set(args) != allowed:
         raise ValueError(f"{name} requires exactly: {', '.join(sorted(allowed))}")
@@ -114,6 +118,11 @@ class CopilotAgent:
                     trace = trace[int(start):int(end)]
                 return {"trace": trace}
             return {what: result.get(what)}
+        if name == "explain_trace":
+            result = self.results.get(args["result_id"])
+            if result is None:
+                raise ValueError("unknown result_id")
+            return explain_trace(self.gateway, result, args["question"])
         if name == "submit":
             return {"submitted": True, "source": args["source"]}
         raise ValueError(f"unsupported tool: {name}")

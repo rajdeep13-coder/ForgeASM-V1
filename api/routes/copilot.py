@@ -77,6 +77,15 @@ async def copilot_telemetry() -> JSONResponse:
         return JSONResponse(content={"records": [], "error": str(exc)})
 
 
+@router.get("/telemetry/export", summary="Export benchmark telemetry JSON")
+async def copilot_telemetry_export(request: Request) -> JSONResponse:
+    try:
+        session_id = request.headers.get("X-Session-ID")
+        return JSONResponse(content=gateway().benchmark_export(session_id))
+    except ModelUnavailable as exc:
+        return JSONResponse(content={"records": [], "error": str(exc)})
+
+
 @router.get("/episodes", summary="Return cached Copilot episodes for the logbook")
 async def copilot_episodes() -> JSONResponse:
     episode_dir = Path(__file__).resolve().parents[2] / "logs" / "copilot_episodes"

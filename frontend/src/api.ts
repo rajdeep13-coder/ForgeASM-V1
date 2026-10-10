@@ -117,6 +117,20 @@ export interface CopilotTelemetry {
   bytes_off_device: number;
 }
 
+export interface CopilotBenchmark {
+  schema_version: number;
+  session_id: string | null;
+  records: CopilotTelemetry[];
+  totals: {
+    calls: number;
+    tokens_in: number;
+    tokens_out: number;
+    latency_ms: number;
+    tokens_per_sec: number;
+    bytes_off_device: number;
+  };
+}
+
 export interface CopilotRunResponse {
   task_id: string;
   status: string;
@@ -201,6 +215,10 @@ export async function getCopilotCapabilities(): Promise<CopilotCapabilities> {
 
 export async function getCopilotTelemetry(): Promise<{ records: CopilotTelemetry[]; error?: string }> {
   return request('GET', '/api/copilot/telemetry');
+}
+
+export async function exportCopilotBenchmark(): Promise<CopilotBenchmark> {
+  return request<CopilotBenchmark>('GET', '/api/copilot/telemetry/export');
 }
 
 export async function runCopilot(taskId: string, maxIterations = 4): Promise<CopilotRunResponse> {
