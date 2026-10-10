@@ -161,3 +161,17 @@ class CopilotRunResponse(BaseModel):
     attempts: List[Dict[str, Any]] = Field(default_factory=list)
     final: Optional[Dict[str, Any]] = None
     explanation: Optional[str] = None
+
+
+class CopilotTranslateRequest(BaseModel):
+    source_isa: str = Field(..., min_length=1, max_length=20)
+    target_isa: str = Field(..., min_length=1, max_length=20)
+    source: str = Field(..., min_length=1, max_length=100_000)
+    max_repairs: int = Field(default=4, ge=0, le=4)
+
+
+class CopilotTranslateResponse(BaseModel):
+    episode_id: str
+    verdict: str
+    translation: Optional[Dict[str, Any]] = None
+    results: List[Dict[str, Any]] = Field(default_factory=list)

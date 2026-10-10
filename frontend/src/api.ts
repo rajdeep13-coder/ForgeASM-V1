@@ -144,6 +144,13 @@ export interface CopilotEpisode {
   results?: Array<Record<string, unknown>>;
 }
 
+export interface CopilotTranslationResult {
+  episode_id: string;
+  verdict: string;
+  translation?: Record<string, unknown> | null;
+  results: Array<Record<string, unknown>>;
+}
+
 // ─── Assembler ────────────────────────────────────────────────────────────────
 
 export async function assembleCode(code: string, isa: string): Promise<AssembleResult> {
@@ -197,4 +204,12 @@ export async function runCopilot(taskId: string, maxIterations = 4): Promise<Cop
 
 export async function getCopilotEpisodes(): Promise<{ episodes: CopilotEpisode[] }> {
   return request('GET', '/api/copilot/episodes');
+}
+
+export async function translateCopilot(
+  sourceIsa: string, targetIsa: string, source: string, maxRepairs = 4,
+): Promise<CopilotTranslationResult> {
+  return request<CopilotTranslationResult>('POST', '/api/copilot/translate', {
+    source_isa: sourceIsa, target_isa: targetIsa, source, max_repairs: maxRepairs,
+  });
 }

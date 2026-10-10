@@ -16,3 +16,6 @@
 - Added the generated `eval/` task corpus, reference-solution gate, measured
   model matrix, failure taxonomy, ablations, JSON results, Markdown report, and
   replay mode via `python -m eval.run`.
+- Added simulator-verified ISA translation with explicit neutral observables,
+  bounded repair episodes, translation API/UI, reference fixtures, and
+  generated translation expansion metrics.

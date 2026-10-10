@@ -11,12 +11,16 @@ from fastapi.responses import JSONResponse
 from api.copilot.agent import run_agent
 from api.copilot.provider import ProviderConfigurationError, ProviderRequestError
 from api.copilot.tasks import TaskError, load_task
-from api.models import APIError, CopilotRunRequest, CopilotRunResponse
+from api.models import (
+    APIError, CopilotRunRequest, CopilotRunResponse,
+    CopilotTranslateRequest, CopilotTranslateResponse,
+)
 from copilot.gateway import (
     GatewayConfigurationError,
     ModelGateway,
     ModelUnavailable,
 )
+from copilot.translation import TranslationAgent, TranslationSpec, TranslationVector
 
 router = APIRouter(prefix="/api/copilot", tags=["Copilot"])
 _gateway: ModelGateway | None = None
@@ -117,3 +121,53 @@ async def run_copilot(req: CopilotRunRequest, request: Request) -> JSONResponse:
             content=APIError(error=str(exc), code="COPILOT_RUN_ERROR").model_dump(),
         )
     return CopilotRunResponse(task_id=req.task_id, **result)
+
+
+@router.post(
+    "/translate",
+    response_model=CopilotTranslateResponse,
+    summary="Translate assembly and verify ISA-neutral observables",
+)
+async def translate_copilot(req: CopilotTranslateRequest, request: Request) -> JSONResponse:
+    try:
+        source_isa = req.source_isa.lower()
+        target_isa = req.target_isa.lower()
+        model_gateway = gateway()
+        model_gateway.set_session_id(request.headers.get("X-Session-ID", "default"))
+        spec = TranslationSpec(
+            source_isa=source_isa,
+            target_isa=target_isa,
+            source=req.source,
+            vectors=[TranslationVector("default")],
+            observe_output=True,
+        )
+        result = TranslationAgent(model_gateway).translate(spec, req.max_repairs)
+    except (ValueError, GatewayConfigurationError) as exc:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=APIError(error=str(exc), code="INVALID_TRANSLATION").model_dump(),
+        )
+    except (ProviderRequestError, ModelUnavailable) as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=APIError(error=str(exc), code="COPILOT_PROVIDER_ERROR").model_dump(),
+        )
+    return CopilotTranslateResponse(
+        episode_id=result["episode_id"],
+        verdict=result["verdict"],
+        translation=result.get("translation"),
+        results=result["results"],
+    )
+
+
+@router.get("/translation-episodes", summary="Return cached translation episodes")
+async def translation_episodes() -> JSONResponse:
+    episode_dir = Path(__file__).resolve().parents[2] / "logs" / "copilot_translation"
+    episodes = []
+    if episode_dir.is_dir():
+        for path in sorted(episode_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+            try:
+                episodes.append(json.loads(path.read_text(encoding="utf-8")))
+            except (OSError, json.JSONDecodeError):
+                continue
+    return JSONResponse(content={"episodes": episodes[:100]})

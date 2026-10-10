@@ -4,7 +4,7 @@ import {
   assembleCode, createSimulation, stepSimulation,
   runSimulation, resetSimulation, deleteSimulation,
   getExamples, APIError,
-  getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, runCopilot,
+  getCopilotCapabilities, getCopilotTelemetry, getCopilotEpisodes, runCopilot, translateCopilot,
   type ExamplesByISA, type SimState,
   type CopilotCapabilities, type CopilotTelemetry, type CopilotEpisode,
 } from './api';
@@ -333,7 +333,10 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
   const [telemetry, setTelemetry] = useState<CopilotTelemetry[]>([]);
   const [episodes, setEpisodes] = useState<CopilotEpisode[]>([]);
   const [offline, setOffline] = useState(() => localStorage.getItem('forgeasm-offline') === 'true');
-  const [tab, setTab] = useState<'copilot' | 'logbook' | 'compare'>('copilot');
+  const [tab, setTab] = useState<'copilot' | 'translate' | 'logbook' | 'compare'>('copilot');
+  const [targetIsa, setTargetIsa] = useState('risc3');
+  const [translationSource, setTranslationSource] = useState('');
+  const [translation, setTranslation] = useState<Record<string, unknown> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -382,6 +385,20 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
     }
   };
 
+  const translate = async () => {
+    if (!translationSource.trim() || targetIsa === isa || running) return;
+    setRunning(true); setError(null); setTranslation(null);
+    try {
+      const response = await translateCopilot(isa, targetIsa, translationSource);
+      setTranslation(response as unknown as Record<string, unknown>);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <aside className="copilot-panel" aria-label="Copilot">
       <div className="copilot-header">
@@ -405,10 +422,10 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
         </label>
       </div>
       <div className="copilot-tabs" role="tablist">
-        {(['copilot', 'logbook', 'compare'] as const).map(item => (
+        {(['copilot', 'translate', 'logbook', 'compare'] as const).map(item => (
           <button key={item} role="tab" aria-selected={tab === item}
             className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>
-            {item === 'copilot' ? 'Solve' : item === 'logbook' ? 'Logbook' : 'Compare'}
+            {item === 'copilot' ? 'Solve' : item === 'translate' ? 'Translate' : item === 'logbook' ? 'Logbook' : 'Compare'}
           </button>
         ))}
       </div>
@@ -439,6 +456,34 @@ function CopilotPanel({ isa, onInsert }: { isa: string; onInsert: (source: strin
                 <pre className="copilot-state">Actual run: {JSON.stringify(actualState, null, 2)}</pre>
               )}
               {final && <pre className="copilot-code">{source ?? 'No final assembly returned.'}</pre>}
+            </div>
+          )}
+        </div>
+      )}
+      {tab === 'translate' && (
+        <div className="copilot-body">
+          <label htmlFor="translation-target">Target ISA</label>
+          <select id="translation-target" value={targetIsa} onChange={e => setTargetIsa(e.target.value)}>
+            {['risc1', 'risc2', 'risc3', 'cisc'].filter(name => name !== isa).map(name =>
+              <option key={name} value={name}>{name.toUpperCase()}</option>)}
+          </select>
+          <label htmlFor="translation-source">Source assembly ({isa.toUpperCase()})</label>
+          <textarea id="translation-source" value={translationSource}
+            onChange={e => setTranslationSource(e.target.value)}
+            placeholder="Paste source assembly to translate" rows={7} />
+          <button className="btn btn-assemble copilot-generate" onClick={translate}
+            disabled={running || !translationSource.trim() || targetIsa === isa}>
+            {running ? 'Translating and verifying…' : 'Translate and verify'}
+          </button>
+          {translation && (
+            <div className="copilot-result">
+              <div className={`copilot-verdict ${translation.verdict === 'passed' ? 'pass' : 'fail'}`}>
+                {translation.verdict === 'passed' ? 'EQUIVALENT' : 'MISMATCH'}
+              </div>
+              <pre className="copilot-code">
+                {String((translation.translation as Record<string, unknown> | null)?.target_source ?? 'No target assembly')}
+              </pre>
+              <pre className="copilot-state">{JSON.stringify(translation.results ?? [], null, 2)}</pre>
             </div>
           )}
         </div>

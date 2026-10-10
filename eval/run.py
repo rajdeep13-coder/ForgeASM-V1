@@ -18,6 +18,7 @@ from copilot.agent import CopilotAgent
 from copilot.gateway import GatewayConfigurationError, ModelGateway, ModelUnavailable, MockBackend
 from copilot.tasks import TaskError, load_task
 from core.runtime import run_program
+from copilot.translation import TranslationSpec, TranslationVector, verify_translation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,10 +26,38 @@ TASK_DIR = ROOT / "eval" / "tasks"
 RESULTS_PATH = ROOT / "eval" / "results.json"
 REPORT_PATH = ROOT / "eval" / "RESULTS.md"
 EPISODE_DIR = ROOT / "eval" / "episodes"
+TRANSLATION_DIR = ROOT / "eval" / "translation_tasks"
 
 
 def task_files() -> List[Path]:
     return sorted(TASK_DIR.glob("*.json"))
+
+
+def translation_task_files() -> List[Path]:
+    return sorted(TRANSLATION_DIR.glob("*.json"))
+
+
+def validate_translation_references() -> List[Dict[str, Any]]:
+    references = []
+    for path in translation_task_files():
+        item = json.loads(path.read_text(encoding="utf-8"))
+        vectors = [
+            TranslationVector(
+                vector["id"], vector.get("init", {}),
+                vector.get("memory_arch", "neumann"), vector.get("max_cycles", 10_000),
+            )
+            for vector in item.get("vectors", [])
+        ]
+        result = verify_translation(TranslationSpec(
+            item["source_isa"], item["target_isa"], item["source"], vectors,
+            [tuple(pair) for pair in item.get("memory_ranges", [])],
+            bool(item.get("observables", {}).get("output", True)),
+        ), item["reference"])
+        if not result["passed"]:
+            raise AssertionError(f"translation reference failed: {item['id']}")
+        references.append({"task": item["id"], "pair": f"{item['source_isa']}->{item['target_isa']}",
+                           "instruction_count_ratio": result["instruction_count_ratio"]})
+    return references
 
 
 def validate_references() -> List[Dict[str, Any]]:
@@ -131,6 +160,7 @@ def _models() -> Dict[str, str]:
 
 def run_matrix(use_mock: bool = False) -> Dict[str, Any]:
     references = validate_references()
+    translation_references = validate_translation_references()
     cells: List[Dict[str, Any]] = []
     tasks = [load_task(str(path)) for path in task_files()]
     models = {"mock": "mock"} if use_mock else _models()
@@ -151,7 +181,14 @@ def run_matrix(use_mock: bool = False) -> Dict[str, Any]:
             except (GatewayConfigurationError, ModelUnavailable, OSError) as exc:
                 for ablation in ("no-card", "card-no-examples", "full-card", "no-repair"):
                     cells.append(_empty_cell(task, model, str(exc), ablation))
-    return {"schema_version": 1, "generated_at": time.time(), "references": references, "cells": cells}
+    translation_cells = [
+        {"pair": item["pair"], "model": "reference", "status": "completed",
+         "passed": True, "instruction_count_ratio": item["instruction_count_ratio"]}
+        for item in translation_references
+    ]
+    return {"schema_version": 2, "generated_at": time.time(), "references": references,
+            "translation_references": translation_references, "translation_cells": translation_cells,
+            "cells": cells}
 
 
 def _summary(cells: Iterable[Dict[str, Any]], key: str) -> List[Dict[str, Any]]:
@@ -194,15 +231,33 @@ def render_report(data: Dict[str, Any]) -> str:
     for cell in completed:
         if cell.get("failure"):
             taxonomy[cell["failure"]] = taxonomy.get(cell["failure"], 0) + 1
+    translation_cells = data.get("translation_cells", [])
+    translation_pairs = {}
+    for cell in translation_cells:
+        translation_pairs.setdefault(cell["pair"], []).append(cell)
+    translation_lines = ["| Pair | Model | Success rate | Mean instruction ratio |",
+                         "| --- | --- | ---: | ---: |"]
+    for pair, items in sorted(translation_pairs.items()):
+        models = {}
+        for item in items:
+            models.setdefault(item["model"], []).append(item)
+        for model, model_items in sorted(models.items()):
+            translation_lines.append(
+                f"| {pair} | {model} | "
+                f"{mean(int(i['passed']) for i in model_items):.4f} | "
+                f"{mean(i['instruction_count_ratio'] for i in model_items):.4f} |"
+            )
     return "\n".join([
         "# ForgeASM Evaluation Results", "",
         f"Generated from `eval/results.json`; completed cells: {len(completed)}, skipped cells: {skipped}.", "",
         "## Per-ISA", "", _table(_summary(data["cells"], "isa")), "",
         "## Per-model", "", _table(_summary(data["cells"], "model")), "",
         "## Ablations", "", _table(_summary(data["cells"], "ablation")), "",
+        "## Translation", "", "\n".join(translation_lines), "",
         "## Failure taxonomy", "", "```json", json.dumps(taxonomy, indent=2, sort_keys=True), "```", "",
         "## Findings", "",
         f"- The reference gate validated {len(data['references'])} task/ISA solutions before model scoring.",
+        f"- The translation reference gate validated {len(data.get('translation_references', []))} ordered ISA pairs.",
         f"- {skipped} cells were skipped because their backend was unavailable; no unavailable backend is scored as zero.",
         f"- Completed cells used measured token, latency, throughput, cycle, and off-device-byte fields ({len(completed)} observations).",
         "- Ablation rows are generated from the same stored cell schema, so replay does not call a model.",

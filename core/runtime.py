@@ -85,6 +85,8 @@ def run_program(
             "cycles": 0,
             "registers": {},
             "flags": {},
+            "output": "",
+            "output": "",
             "memory_dump": {},
             "trace": [],
         }
@@ -143,6 +145,7 @@ def run_program(
             flag: simulation.cpu.get_flag(flag)
             for flag in ("Z", "C", "O", "N")
         },
+        "output": simulation.cpu.output_buffer,
         "memory_dump": _memory_dump(simulation, memory_ranges or []),
         "trace": trace_entries if trace else None,
     }
