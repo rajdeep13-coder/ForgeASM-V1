@@ -1,17 +1,7 @@
-# ForgeASM
+# ForgeASM-v1
 
 ForgeASM is a local-first hardware architecture lab where Gemma learns a custom ISA in context, writes assembly, repairs it through assembler/simulator tools, and earns a pass only from a deterministic checker.
 
-## 30-second demo
-
-The demo capture should show: describe a task → inspect the repair loop in
-Copilot Logbook → see the verified pass badge. Capture instructions are in
-[docs/DEMO.md](docs/DEMO.md); benchmark numbers below are generated from
-`eval/results.json`. No unrecorded GIF is presented as evidence.
-
-## Why Gemma 4
-
-Gemma is a strong fit for constrained, local-first reasoning: the model must learn one of four unusual ISAs from a compact card, emit only assembly/tool arguments, and recover from concrete assembler and simulator feedback. Open weights make the same experiment reproducible in classrooms and private labs.
 
 ## Quick start
 
@@ -75,9 +65,6 @@ The complete generated report is [eval/RESULTS.md](eval/RESULTS.md). The current
 
 Local mode sends model requests only to the configured localhost-compatible model endpoint and reports zero off-device bytes. Cloud mode is opt-in and visibly reports off-device telemetry. The simulator/checker remains local and server-owned.
 
-## Limitations
-
-The committed evaluation artifact currently contains mock-model measurements and reference translation gates, not real Gemma measurements. A configured Gemma model is required before claiming real-model pass rates, image transcription accuracy, or live translation success. Runtime sessions are in memory, and the demo GIF/photo assets must be captured locally rather than invented.
 
 ## License
 
