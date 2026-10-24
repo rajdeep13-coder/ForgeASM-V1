@@ -1,1 +1,0 @@
-{"id":"t03_risc3_to_cisc","source_isa":"risc3","target_isa":"cisc","source":"halt","reference":"halt","observables":{"output":true},"vectors":[{"id":"default","init":{},"memory_arch":"neumann","max_cycles":10}]}

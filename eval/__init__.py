@@ -1,1 +1,0 @@
-"""Reproducible ForgeASM evaluation harness."""

@@ -1,9 +1,0 @@
-{
-  "isa": "risc3",
-  "memory_architecture": "neumann",
-  "description": "Write a program that halts immediately.",
-  "expected": {
-    "halted": true,
-    "cycle_count": 1
-  }
-}

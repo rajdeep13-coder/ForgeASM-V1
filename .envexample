@@ -1,9 +1,1 @@
-# Local-first Gemma configuration.
-# Keep this file private. It is ignored by Git.
-GEMMA_BACKEND=LOCAL
-GEMMA_BASE_URL=http://127.0.0.1:11434/v1
-GEMMA_FAST_MODEL=
-GEMMA_HEAVY_MODEL=
-GEMMA_API_KEY=
-GEMMA_TIMEOUT_SECONDS=60
-
+# ForgeASM does not require environment variables.

@@ -27,7 +27,6 @@ from fastapi.staticfiles import StaticFiles
 
 from api.models import AssembleRequest, AssembleResponse
 from api.routes.simulation import router as simulation_router
-from api.routes.copilot import initialize_gateway, router as copilot_router
 from core.isa.isa_def import ISA
 from core.isa.exceptions import InvalidISAError
 from core.assembler.assembler import Assembler
@@ -38,7 +37,6 @@ from core.assembler.exceptions import AssemblerError
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    initialize_gateway()
     yield
 
 
@@ -79,7 +77,6 @@ app.add_middleware(
 # ─── Routers ──────────────────────────────────────────────────────────────────
 
 app.include_router(simulation_router)
-app.include_router(copilot_router)
 
 
 # ─── Assemble ─────────────────────────────────────────────────────────────────
